@@ -1,25 +1,43 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36109.1 d17.14
+VisualStudioVersion = 17.14.36109.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocTransform", "DocTransform.csproj", "{9F24D719-8C62-4598-8776-8FA01AADE20A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocTransform", "DocTransform.csproj", "{CF759A72-F0DD-4FB7-974B-A3F87E89623D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{9F24D719-8C62-4598-8776-8FA01AADE20A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9F24D719-8C62-4598-8776-8FA01AADE20A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9F24D719-8C62-4598-8776-8FA01AADE20A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9F24D719-8C62-4598-8776-8FA01AADE20A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|ARM64.Build.0 = Debug|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x64.ActiveCfg = Debug|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x64.Build.0 = Debug|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x64.Deploy.0 = Debug|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x86.ActiveCfg = Debug|x86
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x86.Build.0 = Debug|x86
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Debug|x86.Deploy.0 = Debug|x86
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|ARM64.ActiveCfg = Release|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|ARM64.Build.0 = Release|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|ARM64.Deploy.0 = Release|ARM64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x64.ActiveCfg = Release|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x64.Build.0 = Release|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x64.Deploy.0 = Release|x64
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x86.ActiveCfg = Release|x86
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x86.Build.0 = Release|x86
+		{CF759A72-F0DD-4FB7-974B-A3F87E89623D}.Release|x86.Deploy.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {1E8B9EC6-FCB2-4218-8116-D9E6A5E48EA6}
+		SolutionGuid = {9D5D6316-BD57-4B3E-AD8E-8F1413A8D468}
 	EndGlobalSection
 EndGlobal
