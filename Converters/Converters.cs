@@ -45,6 +45,7 @@ public class StringToVisibilityConverter : IValueConverter
     }
 }
 
+/*
 public class BoolToColorConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -61,6 +62,7 @@ public class BoolToColorConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+*/
 
 /// <summary>
 ///     将布尔值反向转换为可见性的转换器
