@@ -15,8 +15,14 @@ public partial class ExcelData : ObservableObject
 
     // 3. 使用 [ObservableProperty] 特性来自动生成可通知UI的属性
     //    这会自动创建一个名为 SourceFileName 的属性，和一个名为 _sourceFileName 的私有字段
-    [ObservableProperty]
     private string _sourceFileName = string.Empty;
+
+    public string SourceFileName
+    {
+        get => _sourceFileName;
+        set => SetProperty(ref _sourceFileName, value);
+    }
+
 
     // 4. RowCount 是一个只读属性，它的值依赖于Rows集合
     public int RowCount => Rows.Count;
