@@ -36,12 +36,12 @@ public class ImageProcessingService
     /// </summary>
     public async Task<(int Width, int Height)?> GetImageSizeAsync(string path)
     {
-        return await Task.Run(() =>
+        return await Task.Run<(int Width, int Height)?>(() =>
         {
             try
             {
                 using var image = new MagickImage(path);
-                return (image.Width, image.Height);
+                return ((int)image.Width, (int)image.Height);
             }
             catch
             {
