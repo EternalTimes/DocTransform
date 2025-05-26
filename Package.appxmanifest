@@ -8,11 +8,11 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="ab785a8b-7da2-476e-b4bd-849e42ba3a4a"
+    Name="d0196354-0b37-4c7f-8aba-51e53cd9bd41"
     Publisher="CN=Tirra"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="ab785a8b-7da2-476e-b4bd-849e42ba3a4a" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="d0196354-0b37-4c7f-8aba-51e53cd9bd41" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>DocTransform</DisplayName>

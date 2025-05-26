@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DocTransform (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DocTransform (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

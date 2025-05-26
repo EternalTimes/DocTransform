@@ -1,4 +1,4 @@
-ï»¿using DocTransform.ViewModels;
+using DocTransform.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -50,12 +50,12 @@ namespace DocTransform
             _presenter = _appWindow.Presenter as OverlappedPresenter;
 
             // Set window properties
-            this.Title = "Excelåˆ°Wordæ•°æ®æ˜ å°„å·¥å…·";
-            // è·å–AppWindowå¹¶è®¾ç½®åˆå§‹å¤§å°
+            this.Title = "Excelµ½WordÊı¾İÓ³Éä¹¤¾ß";
+            // »ñÈ¡AppWindow²¢ÉèÖÃ³õÊ¼´óĞ¡
             _appWindow = GetAppWindowForCurrentWindow();
             if (_appWindow != null)
             {
-                _appWindow.Resize(new SizeInt32(950, 680)); // è®¾ç½®åˆå§‹å®½åº¦å’Œé«˜åº¦
+                _appWindow.Resize(new SizeInt32(950, 680)); // ÉèÖÃ³õÊ¼¿í¶ÈºÍ¸ß¶È
             }
 
             // Center the window
@@ -125,7 +125,7 @@ namespace DocTransform
             }
         }
 
-        
+
 
         public void CloseButton_Click(object sender, RoutedEventArgs e)
         {

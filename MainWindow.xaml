@@ -1,4 +1,4 @@
-﻿<Window
+<Window
     x:Class="DocTransform.MainWindow"
     x:Name="self"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -190,7 +190,7 @@
                                                        Text="{x:Bind ViewModel.WordTemplatePathDisplayText, Mode=OneWay}"
                                                        TextTrimming="CharacterEllipsis" 
                                                        ToolTipService.ToolTip="{x:Bind ViewModel.WordTemplatePath, Mode=OneWay}"
-                                                       Foreground="{x:Bind ViewModel.WordTemplatePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToColorConverter}, ConverterParameter='{ThemeResource TextFillColorSecondaryBrush};{ThemeResource TextFillColorPrimaryBrush}'}"
+                                                       Foreground="{x:Bind ViewModel.WordTemplatePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToColorConverter}, ConverterParameter='TextFillColorSecondaryBrush;TextFillColorPrimaryBrush'}"
                                                        FontStyle="{x:Bind ViewModel.WordTemplatePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToFontStyleConverter}, ConverterParameter='Italic;Normal'}"/>
                                         </StackPanel>
                                     </Border>
