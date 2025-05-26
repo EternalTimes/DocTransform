@@ -1,5 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 
+using System;
+using System.Collections.Generic;
+
 namespace DocTransform.Services;
 
 /// <summary>
