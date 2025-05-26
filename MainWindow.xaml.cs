@@ -20,7 +20,8 @@ namespace DocTransform
         {
             this.InitializeComponent();
 
-            ViewModel = new MainViewModel();
+            // Pass the window's DispatcherQueue to the ViewModel's constructor
+            ViewModel = new MainViewModel(this.DispatcherQueue);
 
             // Initialize window properties
             InitializeWindow();
