@@ -3,7 +3,10 @@ using CommunityToolkit.Mvvm.Input;
 using DocTransform.Constants;
 using DocTransform.Models;
 using DocTransform.Services;
+using Windows.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,12 +16,12 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
-// using DocumentFormat.OpenXml.Packaging; // 如果 CheckPlaceholders 方法不再使用 OpenXML SDK，可以移除
 
 namespace DocTransform.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
+    // ... (All properties and the constructor remain the same as the previous correct version)
     private readonly ExcelService _excelService;
     private readonly WordService _wordService;
     private readonly IdCardService _idCardService;
@@ -33,35 +36,34 @@ public partial class MainViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ExcelFilePathIsPlaceholder))]
     [NotifyPropertyChangedFor(nameof(SingleModeExcelDisplayText))]
     [NotifyPropertyChangedFor(nameof(SingleModeExcelIsPlaceholder))]
+    [NotifyPropertyChangedFor(nameof(ExcelFilePathForegroundBrush))]
     private string _excelFilePath = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentTableModeText))]
+    [NotifyPropertyChangedFor(nameof(CurrentTableModeForegroundBrush))]
     [NotifyPropertyChangedFor(nameof(ExcelButtonText))]
     [NotifyPropertyChangedFor(nameof(ExcelFilePathDisplayText))]
     [NotifyPropertyChangedFor(nameof(ExcelFilePathIsPlaceholder))]
-    [NotifyPropertyChangedFor(nameof(MergedDataSummary))]
+    [NotifyPropertyChangedFor(nameof(MergeSummary))]
+    [NotifyPropertyChangedFor(nameof(ExcelFilePathForegroundBrush))]
     private bool _isMultiTableMode;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOutputFolderAvailable))]
-    private string _outputDirectory = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(MergedDataSummary))]
-    private string _selectedKeyColumn = string.Empty;
+    [NotifyPropertyChangedFor(nameof(MergeSummary))]
+    private string _selectedKey = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExcelFilePathDisplayText))]
     [NotifyPropertyChangedFor(nameof(ExcelFilePathIsPlaceholder))]
     [NotifyPropertyChangedFor(nameof(MultiModeExcelSummaryText))]
     [NotifyPropertyChangedFor(nameof(MultiModeExcelIsPlaceholder))]
-    [NotifyPropertyChangedFor(nameof(MergedDataSummary))]
+    [NotifyPropertyChangedFor(nameof(MergeSummary))]
     private MultiTableData _multiTableData;
 
     [ObservableProperty] private ObservableCollection<string> _availableColumns = new();
     [ObservableProperty] private ObservableCollection<string> _availableIdCardColumns = new();
-    [ObservableProperty] private ObservableCollection<string> _availableKeyColumns = new();
+    [ObservableProperty] private ObservableCollection<string> _availableKeys = new();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SingleModeExcelDisplayText))]
@@ -75,7 +77,11 @@ public partial class MainViewModel : ObservableObject
     private bool _enableIdCardExtraction;
 
     [ObservableProperty] private string _excelTemplatePath = string.Empty;
-    [ObservableProperty] private List<string> _idCardPlaceholders = PlaceholderConstants.AllPlaceholders;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IdCardPlaceholdersText))] // <-- 添加这一行
+    private List<string> _idCardPlaceholders = PlaceholderConstants.AllPlaceholders;
+
     [ObservableProperty] private ObservableCollection<ImageSourceDirectory> _imageDirectories = new();
     [ObservableProperty] private ImageFillMode _imageFillMode = ImageFillMode.Fit;
     [ObservableProperty] private List<ImageFillModeItem> _imageFillModeItems = ImageFillModeItem.GetAll();
@@ -104,9 +110,25 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private int _totalItems;
     [ObservableProperty] private bool _useExcelTemplate;
     [ObservableProperty] private bool _useImageReplacement;
-    [ObservableProperty] private string _wordTemplatePath = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WordTemplatePathDisplayText))]      // <-- 为 WordTemplatePath 添加
+    [NotifyPropertyChangedFor(nameof(WordTemplatePathIsPlaceholder))]    // <-- 为 WordTemplatePath 添加
+    [NotifyPropertyChangedFor(nameof(WordTemplatePathForegroundBrush))]  // <-- 为 WordTemplatePathForegroundBrush 添加
+    private string _wordTemplatePath = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOutputFolderAvailable))]
+    [NotifyPropertyChangedFor(nameof(OutputDirectoryDisplayText))]       // <-- 为 OutputDirectory 添加
+    [NotifyPropertyChangedFor(nameof(OutputDirectoryIsPlaceholder))]     // <-- 为 OutputDirectory 添加
+    [NotifyPropertyChangedFor(nameof(OutputDirectoryForegroundBrush))]   // <-- 为 OutputDirectoryForegroundBrush 添加
+    private string _outputDirectory = string.Empty;
+
 
     public string CurrentTableModeText => IsMultiTableMode ? "多表格" : "单表格";
+
+    public Brush CurrentTableModeForegroundBrush => new SolidColorBrush(IsMultiTableMode ? ((Color)Application.Current.Resources["SystemAccentColor"]) : ((Color)Application.Current.Resources["TextFillColorPrimary"]));
+
     public string ExcelButtonText => IsMultiTableMode ? "添加Excel" : "浏览";
     public string ExcelFilePathDisplayText => IsMultiTableMode ? MultiModeExcelSummaryText : SingleModeExcelDisplayText;
     public bool ExcelFilePathIsPlaceholder => IsMultiTableMode ? MultiModeExcelIsPlaceholder : SingleModeExcelIsPlaceholder;
@@ -115,10 +137,35 @@ public partial class MainViewModel : ObservableObject
     public string MultiModeExcelSummaryText => (_multiTableData?.Tables?.Count ?? 0) == 0 ? "未添加Excel表格" : $"已添加 {MultiTableData.Tables.Count} 个表格";
     public bool MultiModeExcelIsPlaceholder => (_multiTableData?.Tables?.Count ?? 0) == 0;
     public bool IsOutputFolderAvailable => !string.IsNullOrEmpty(OutputDirectory) && Directory.Exists(OutputDirectory);
-    public string MergedDataSummary =>
-        (IsMultiTableMode && !string.IsNullOrEmpty(SelectedKeyColumn) && (_multiTableData?.MergedRows?.Count ?? 0) > 0)
-            ? $"已使用 “{SelectedKeyColumn}” 列合并数据，共有 {MultiTableData.MergedRows.Count} 条记录"
-            : (IsMultiTableMode && !string.IsNullOrEmpty(SelectedKeyColumn) ? "合并后无匹配数据或未选择有效的键列" : string.Empty);
+
+    public string MergeSummary =>
+        (IsMultiTableMode && !string.IsNullOrEmpty(SelectedKey) && (_multiTableData?.MergedRows?.Count ?? 0) > 0)
+            ? $"已使用 “{SelectedKey}” 列合并数据，共有 {MultiTableData.MergedRows.Count} 条记录"
+            : (IsMultiTableMode && !string.IsNullOrEmpty(SelectedKey) ? "合并后无匹配数据或未选择有效的键列" : "请选择匹配键以生成预览...");
+
+    public Brush ExcelFilePathForegroundBrush => ExcelFilePathIsPlaceholder
+        ? (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+        : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+
+    // 为 Word 模板路径的文本提供前景色
+    public Brush WordTemplatePathForegroundBrush => WordTemplatePathIsPlaceholder
+        ? (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+        : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+
+    public Brush OutputDirectoryForegroundBrush => OutputDirectoryIsPlaceholder
+    ? (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+    : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+
+    // 为 Word 模板路径提供显示文本
+    public string WordTemplatePathDisplayText => string.IsNullOrEmpty(WordTemplatePath) ? "未选择Word模板文件 (*.docx)" : Path.GetFileName(WordTemplatePath);
+    public bool WordTemplatePathIsPlaceholder => string.IsNullOrEmpty(WordTemplatePath);
+
+    // 为输出目录路径提供显示文本
+    public string OutputDirectoryDisplayText => string.IsNullOrEmpty(OutputDirectory) ? "未选择输出文件夹" : OutputDirectory;
+    public bool OutputDirectoryIsPlaceholder => string.IsNullOrEmpty(OutputDirectory);
+
+    public string IdCardPlaceholdersText => string.Join(", ", _idCardPlaceholders);
+
     public bool IdCardExtractionRelatedPropertiesMightChange => true;
 
     public MainViewModel(DispatcherQueue dispatcherQueue)
@@ -165,7 +212,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ExcelFilePathIsPlaceholder));
         OnPropertyChanged(nameof(MultiModeExcelSummaryText));
         OnPropertyChanged(nameof(MultiModeExcelIsPlaceholder));
-        OnPropertyChanged(nameof(MergedDataSummary));
+        OnPropertyChanged(nameof(MergeSummary));
         UpdateKeyColumns(); UpdateAvailableColumns(); UpdateIdCardColumns();
     }
 
@@ -173,7 +220,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void BrowseWordTemplate() => _dispatcherQueue.TryEnqueue(() => StatusMessage = "请通过文件对话框选择Word模板...");
     [RelayCommand] private void BrowseOutputDirectory() => _dispatcherQueue.TryEnqueue(() => StatusMessage = "请通过文件对话框选择输出文件夹...");
     [RelayCommand] private void BrowseExcelTemplate() => _dispatcherQueue.TryEnqueue(() => StatusMessage = "请通过文件对话框选择Excel模板...");
-    [RelayCommand] private void AddImageDirectoryCmd() => _dispatcherQueue.TryEnqueue(() => StatusMessage = "请通过文件对话框选择图片目录...");
+    [RelayCommand] private void AddImageDirectory() => _dispatcherQueue.TryEnqueue(() => StatusMessage = "请通过文件对话框选择图片目录...");
 
     async partial void OnExcelFilePathChanged(string? oldValue, string? newValue)
     {
@@ -198,10 +245,9 @@ public partial class MainViewModel : ObservableObject
             var isValid = await _wordService.IsValidTemplateAsync(newValue);
             _dispatcherQueue.TryEnqueue(() => {
                 if (isValid) { CheckPlaceholdersCommand?.Execute(null); }
-                else { StatusMessage = "选择的Word模板无效"; /* WordTemplatePath = string.Empty; */ }
+                else { StatusMessage = "选择的Word模板无效"; }
             });
         }
-        else { _dispatcherQueue.TryEnqueue(() => { /* Handle path cleared if needed */ }); }
     }
 
     async partial void OnExcelTemplatePathChanged(string? oldValue, string? newValue)
@@ -210,11 +256,10 @@ public partial class MainViewModel : ObservableObject
         {
             var isValid = await _excelTemplateService.IsValidTemplateAsync(newValue);
             _dispatcherQueue.TryEnqueue(() => {
-                if (!isValid) { StatusMessage = "选择的Excel模板无效"; /* ExcelTemplatePath = string.Empty; */ }
+                if (!isValid) { StatusMessage = "选择的Excel模板无效"; }
                 else { CheckExcelPlaceholdersCommand?.Execute(null); }
             });
         }
-        else { _dispatcherQueue.TryEnqueue(() => { /* Handle path cleared */ }); }
     }
 
     public async Task ProcessAddedImageDirectory(string directoryPath)
@@ -225,7 +270,7 @@ public partial class MainViewModel : ObservableObject
             _dispatcherQueue.TryEnqueue(() => IsProcessing = true);
             var directoryName = Path.GetFileName(directoryPath);
             if (string.IsNullOrEmpty(directoryName)) directoryName = new DirectoryInfo(directoryPath).Name;
-            // ... (目录名去重逻辑) ...
+
             _dispatcherQueue.TryEnqueue(() => StatusMessage = "正在扫描图片目录...");
             var imageFiles = await _imageProcessingService.ScanDirectoryForImagesAsync(directoryPath);
 
@@ -296,17 +341,17 @@ public partial class MainViewModel : ObservableObject
     private void UpdateKeyColumns()
     {
         _dispatcherQueue.TryEnqueue(() => {
-            AvailableKeyColumns.Clear(); string tempSelectedKeyColumn = string.Empty;
+            AvailableKeys.Clear(); string tempSelectedKeyColumn = string.Empty;
             if (IsMultiTableMode && _multiTableData != null) foreach (var header in _multiTableData.CommonHeaders.OrderBy(x => x))
                 {
-                    AvailableKeyColumns.Add(header);
+                    AvailableKeys.Add(header);
                     if (string.IsNullOrEmpty(tempSelectedKeyColumn) &&
                         (header.Contains("身份证", StringComparison.OrdinalIgnoreCase) || header.Contains("ID", StringComparison.OrdinalIgnoreCase) ||
                          header.Contains("编号", StringComparison.OrdinalIgnoreCase) || header.Contains("姓名", StringComparison.OrdinalIgnoreCase) ||
                          header.Contains("名字", StringComparison.OrdinalIgnoreCase)))
                         tempSelectedKeyColumn = header;
                 }
-            SelectedKeyColumn = tempSelectedKeyColumn;
+            SelectedKey = tempSelectedKeyColumn;
         });
     }
 
@@ -314,7 +359,19 @@ public partial class MainViewModel : ObservableObject
     {
         _dispatcherQueue.TryEnqueue(() => {
             AvailableIdCardColumns.Clear(); string tempSelectedIdCardCol = string.Empty;
-            List<string> headers = IsMultiTableMode ? (_multiTableData?.AllHeaders.ToList() ?? new List<string>()) : (CurrentExcelData?.Headers ?? new List<string>());
+
+            // ===== CORRECTED CODE FOR CS0019 =====
+            List<string> headers;
+            if (IsMultiTableMode)
+            {
+                headers = _multiTableData?.AllHeaders.ToList() ?? new List<string>();
+            }
+            else
+            {
+                headers = CurrentExcelData?.Headers?.ToList() ?? new List<string>();
+            }
+            // =====================================
+
             foreach (var header in headers.OrderBy(x => x)) if (header.Contains("身份证", StringComparison.OrdinalIgnoreCase) || header.Contains("证件", StringComparison.OrdinalIgnoreCase) || header.Contains("ID", StringComparison.OrdinalIgnoreCase))
                 {
                     AvailableIdCardColumns.Add(header);
@@ -338,13 +395,13 @@ public partial class MainViewModel : ObservableObject
                 {
                     var newExcelData = new ExcelData
                     {
-                        Headers = new List<string>(CurrentExcelData.Headers),
-                        Rows = new List<Dictionary<string, string>>(CurrentExcelData.Rows.Select(r => new Dictionary<string, string>(r))),
+                        Headers = new ObservableCollection<string>(CurrentExcelData.Headers),
+                        Rows = new ObservableCollection<Dictionary<string, string>>(CurrentExcelData.Rows.Select(r => new Dictionary<string, string>(r))),
                         SourceFileName = CurrentExcelData.SourceFileName
                     };
                     _multiTableData.Tables.Add(newExcelData);
                 }
-                NotifyMultiTableDependentProperties(); // 确保更新所有依赖项
+                NotifyMultiTableDependentProperties();
                 StatusMessage = "已切换到多表格模式";
             }
             else
@@ -352,12 +409,12 @@ public partial class MainViewModel : ObservableObject
                 var firstTable = _multiTableData.Tables.FirstOrDefault();
                 CurrentExcelData = firstTable != null ? new ExcelData
                 {
-                    Headers = new List<string>(firstTable.Headers),
-                    Rows = new List<Dictionary<string, string>>(firstTable.Rows.Select(r => new Dictionary<string, string>(r))),
+                    Headers = new ObservableCollection<string>(firstTable.Headers),
+                    Rows = new ObservableCollection<Dictionary<string, string>>(firstTable.Rows.Select(r => new Dictionary<string, string>(r))),
                     SourceFileName = firstTable.SourceFileName
                 } : new ExcelData();
                 _excelData = CurrentExcelData;
-                NotifyMultiTableDependentProperties(); // 确保更新所有依赖项
+                NotifyMultiTableDependentProperties();
                 StatusMessage = "已切换到单表格模式";
             }
         });
@@ -376,21 +433,21 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    async partial void OnSelectedKeyColumnChanged(string? oldValue, string? newValue)
+    async partial void OnSelectedKeyChanged(string? oldValue, string? newValue)
     {
         if (IsMultiTableMode && !string.IsNullOrEmpty(newValue))
         {
             await Task.Run(() => _multiTableData.MergeData(newValue));
             _dispatcherQueue.TryEnqueue(() => {
                 StatusMessage = $"已使用 “{newValue}” 列合并数据，共有 {_multiTableData.MergedRows.Count} 条记录";
-                OnPropertyChanged(nameof(MergedDataSummary));
+                OnPropertyChanged(nameof(MergeSummary));
             });
         }
         else if (IsMultiTableMode && string.IsNullOrEmpty(newValue))
         {
             if (_multiTableData.MergedRows.Any()) _multiTableData.MergedRows.Clear();
             _dispatcherQueue.TryEnqueue(() => {
-                OnPropertyChanged(nameof(MergedDataSummary));
+                OnPropertyChanged(nameof(MergeSummary));
                 StatusMessage = "请选择匹配键列以合并数据";
             });
         }
@@ -417,7 +474,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             DataPackage dataPackage = new DataPackage(); dataPackage.SetText(text);
-            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+            Clipboard.SetContent(dataPackage);
             _dispatcherQueue.TryEnqueue(() => StatusMessage = $"已复制「{text}」到剪贴板");
             var timer = _dispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromSeconds(3); timer.IsRepeating = false;
             timer.Tick += (s, e) => _dispatcherQueue.TryEnqueue(() => { if (StatusMessage.StartsWith($"已复制「{text}」")) StatusMessage = "准备就绪"; });
@@ -427,48 +484,69 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task GenerateDocuments()
+    public async Task GenerateDocuments()
     {
-        if (string.IsNullOrEmpty(OutputDirectory) || !Directory.Exists(OutputDirectory)) { _dispatcherQueue.TryEnqueue(() => StatusMessage = "请选择有效的输出目录"); return; }
+        if (string.IsNullOrEmpty(OutputDirectory) || !Directory.Exists(OutputDirectory))
+        {
+            _dispatcherQueue.TryEnqueue(() => StatusMessage = "请选择有效的输出目录");
+            return;
+        }
+
         var hasWordTemplate = !string.IsNullOrEmpty(WordTemplatePath) && File.Exists(WordTemplatePath);
         var hasExcelTemplate = UseExcelTemplate && !string.IsNullOrEmpty(ExcelTemplatePath) && File.Exists(ExcelTemplatePath);
-        if (!hasWordTemplate && !hasExcelTemplate) { _dispatcherQueue.TryEnqueue(() => StatusMessage = "请至少选择一个Word模板或Excel模板"); return; }
 
-        List<Dictionary<string, string>> dataRows;
-        if (IsMultiTableMode)
+        if (!hasWordTemplate && !hasExcelTemplate)
         {
-            if (!_multiTableData.Tables.Any()) { _dispatcherQueue.TryEnqueue(() => StatusMessage = "请先添加Excel文件"); return; }
-            if (string.IsNullOrEmpty(SelectedKeyColumn)) { _dispatcherQueue.TryEnqueue(() => StatusMessage = "请选择用于匹配记录的列"); return; }
-            dataRows = _multiTableData.MergedRows;
+            _dispatcherQueue.TryEnqueue(() => StatusMessage = "请至少选择一个Word模板或Excel模板");
+            return;
         }
-        else
-        {
-            dataRows = _excelData.Rows;
-        }
-        if (dataRows == null || !dataRows.Any()) { _dispatcherQueue.TryEnqueue(() => StatusMessage = "没有可处理的数据"); return; }
 
-        _dispatcherQueue.TryEnqueue(() => { IsProcessing = true; ProgressValue = 0; TotalItems = dataRows.Count; ProcessedItems = 0; ProcessResultText = string.Empty; });
-        var localSuccessCount = 0; var localFailCount = 0;
+        List<Dictionary<string, string>> dataRows = IsMultiTableMode ? _multiTableData.MergedRows : _excelData.Rows.ToList();
+
+        if (dataRows == null || !dataRows.Any())
+        {
+            _dispatcherQueue.TryEnqueue(() => StatusMessage = "没有可处理的数据");
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            IsProcessing = true;
+            ProgressValue = 0;
+            TotalItems = dataRows.Count;
+            ProcessedItems = 0;
+            ProcessResultText = string.Empty;
+        });
+
+        var localSuccessCount = 0;
+        var localFailCount = 0;
 
         try
         {
-            await Task.Run(async () => { // Offload the loop to a background thread
+            await Task.Run(async () =>
+            {
                 for (var i = 0; i < dataRows.Count; i++)
                 {
-                    if (!_isProcessing) break; // Allow cancellation
+                    if (!_isProcessing) break;
+
                     var rowData = new Dictionary<string, string>(dataRows[i]);
                     rowData["序号"] = (i + 1).ToString();
                     rowData["时间"] = DateTime.Now.ToString("yyyyMMdd-HHmmss");
                     rowData["日期"] = DateTime.Now.ToString("yyyy-MM-dd");
-                    if (EnableIdCardExtraction && !string.IsNullOrEmpty(SelectedIdCardColumn) && rowData.TryGetValue(SelectedIdCardColumn, out var idCard) && !string.IsNullOrEmpty(idCard))
+
+                    if (EnableIdCardExtraction && !string.IsNullOrEmpty(SelectedIdCardColumn) &&
+                        rowData.TryGetValue(SelectedIdCardColumn, out var idCard) && !string.IsNullOrEmpty(idCard))
                     {
                         try
                         {
                             rowData["身份证性别"] = _idCardService.ExtractGender(idCard);
-                            // ... (extract other ID card fields) ...
                         }
-                        catch { /* Handle ID extraction error silently or log */ }
+                        catch
+                        {
+                            // Handle ID extraction error silently or log
+                        }
                     }
+
                     var fileName = GenerateOutputFileName(rowData, i);
 
                     if (hasWordTemplate)
@@ -477,6 +555,7 @@ public partial class MainViewModel : ObservableObject
                         var wordResult = await _wordService.ProcessTemplateAsync(WordTemplatePath, wordOutputPath, rowData, null);
                         if (wordResult.Success) localSuccessCount++; else localFailCount++;
                     }
+
                     if (hasExcelTemplate)
                     {
                         var excelOutputPath = Path.Combine(OutputDirectory, $"{fileName}.xlsx");
@@ -485,18 +564,33 @@ public partial class MainViewModel : ObservableObject
                            : await _excelTemplateService.ProcessTemplateAsync(ExcelTemplatePath, excelOutputPath, rowData, null);
                         if (excelResult.Success) localSuccessCount++; else localFailCount++;
                     }
-                    // These are [ObservableProperty], Community Toolkit handles dispatching if set from background
+
                     ProcessedItems = i + 1;
                     ProgressValue = (int)((double)ProcessedItems / TotalItems * 100);
                 }
             });
-            _dispatcherQueue.TryEnqueue(() => {
-                ProcessResultText = $"处理完成：成功 {localSuccessCount} 个，失败 {localFailCount} 个"; ProcessSuccess = localFailCount == 0;
-                StatusMessage = $"文档生成完成，输出到 {OutputDirectory}"; ProgressValue = 100;
+
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                ProcessResultText = $"处理完成：成功 {localSuccessCount} 个，失败 {localFailCount} 个";
+                ProcessSuccess = localFailCount == 0;
+                StatusMessage = $"文档生成完成，输出到 {OutputDirectory}";
+                ProgressValue = 100;
             });
         }
-        catch (Exception ex) { _dispatcherQueue.TryEnqueue(() => { StatusMessage = $"处理过程中出错: {ex.Message}"; ProcessSuccess = false; ProcessResultText = $"处理失败: {ex.Message}"; }); }
-        finally { _dispatcherQueue.TryEnqueue(() => IsProcessing = false); }
+        catch (Exception ex)
+        {
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                StatusMessage = $"处理过程中出错: {ex.Message}";
+                ProcessSuccess = false;
+                ProcessResultText = $"处理失败: {ex.Message}";
+            });
+        }
+        finally
+        {
+            _dispatcherQueue.TryEnqueue(() => IsProcessing = false);
+        }
     }
 
     private string GenerateOutputFileName(Dictionary<string, string> rowData, int index)
@@ -506,7 +600,7 @@ public partial class MainViewModel : ObservableObject
         fileName = fileName.Replace("{序号}", rowData.ContainsKey("序号") ? rowData["序号"] : (index + 1).ToString(), StringComparison.OrdinalIgnoreCase);
         fileName = fileName.Replace("{时间}", rowData.ContainsKey("时间") ? rowData["时间"] : DateTime.Now.ToString("yyyyMMdd-HHmmss"), StringComparison.OrdinalIgnoreCase);
         fileName = fileName.Replace("{日期}", rowData.ContainsKey("日期") ? rowData["日期"] : DateTime.Now.ToString("yyyy-MM-dd"), StringComparison.OrdinalIgnoreCase);
-        foreach (var invalidChar in Path.GetInvalidFileNameChars()) fileName = fileName.Replace(invalidChar.ToString(), "_"); // Use ToString() for Replace
+        foreach (var invalidChar in Path.GetInvalidFileNameChars()) fileName = fileName.Replace(invalidChar.ToString(), "_");
         return string.IsNullOrWhiteSpace(fileName) || fileName.All(c => c == '_') ? $"Document_{index + 1}_{DateTime.Now:yyyyMMddHHmmss}" : fileName;
     }
 
@@ -545,7 +639,7 @@ public partial class MainViewModel : ObservableObject
         else _dispatcherQueue.TryEnqueue(() => StatusMessage = "输出目录不存在");
     }
 
-    private string CalculateAge(string birthDateStr) { /* ... 原有逻辑 ... */ return "未知"; }
+    private string CalculateAge(string birthDateStr) { return "未知"; }
 
     [RelayCommand]
     private async Task CheckExcelPlaceholders()
@@ -577,7 +671,7 @@ public partial class MainViewModel : ObservableObject
             _dispatcherQueue.TryEnqueue(() => { IsProcessing = true; StatusMessage = $"正在扫描目录 {directory.DirectoryName} 中的图片..."; });
             var imageFiles = await _imageProcessingService.ScanDirectoryForImagesAsync(directory.DirectoryPath);
             _dispatcherQueue.TryEnqueue(() => {
-                if (directory.ImageFiles == null) directory.ImageFiles = new ObservableCollection<string>(); // Ensure initialized
+                if (directory.ImageFiles == null) directory.ImageFiles = new ObservableCollection<string>();
                 directory.ImageFiles.Clear();
                 foreach (var file in imageFiles) directory.ImageFiles.Add(file);
                 StatusMessage = $"目录 {directory.DirectoryName} 中找到 {imageFiles.Count} 个图片";
@@ -588,13 +682,10 @@ public partial class MainViewModel : ObservableObject
     }
     [RelayCommand] private void ClearAllImageDirectories() { ImageDirectories.Clear(); UseImageReplacement = false; _dispatcherQueue.TryEnqueue(() => StatusMessage = "已清除所有图片目录"); }
 
-    // On<PropertyName>Changed partial methods for [ObservableProperty]
-    // These are called AFTER the property has changed.
     partial void OnAvailableColumnsChanged(ObservableCollection<string>? oldValue, ObservableCollection<string> newValue)
     {
-        // Update SelectedImageMatchingColumn based on new available columns
         _dispatcherQueue.TryEnqueue(() => {
-            if (!string.IsNullOrEmpty(SelectedImageMatchingColumn) && (newValue?.Contains(SelectedImageMatchingColumn) == true)) { /* Keep current */ }
+            if (!string.IsNullOrEmpty(SelectedImageMatchingColumn) && (newValue?.Contains(SelectedImageMatchingColumn) == true)) { }
             else if (newValue?.Count > 0)
             {
                 var preferredColumns = newValue.Where(c =>

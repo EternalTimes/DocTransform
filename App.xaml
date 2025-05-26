@@ -23,6 +23,7 @@
             <converters:StringNotEmptyToBoolConverter x:Key="StringNotEmptyToBoolConverter" />
             <converters:NotZeroToVisibilityConverter x:Key="NotZeroToVisibilityConverter" />
             <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
+            <converters:StringListToStringConverter x:Key="StringListToStringConverter" />
 
         </ResourceDictionary>
     </Application.Resources>

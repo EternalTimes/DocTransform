@@ -1,11 +1,13 @@
 ﻿<Window
     x:Class="DocTransform.MainWindow"
+    x:Name="self"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodels="using:DocTransform.ViewModels"
-    xmlns:converters="using:DocTransform.Converters" 
+    xmlns:converters="using:DocTransform.Converters"
+    xmlns:models="using:DocTransform.Models"
     mc:Ignorable="d"
     Title="Excel到Word数据映射工具">
     <Grid x:Name="RootGrid" AllowDrop="True">
@@ -58,7 +60,7 @@
                                            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
                             </StackPanel>
                         </Border>
-                        
+
                         <Border Style="{ThemeResource CardBorderStyle}">
                             <StackPanel Margin="16" Spacing="16">
                                 <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="文件选择" />
@@ -93,9 +95,9 @@
                                             <FontIcon Glyph="&#xE72F;" FontFamily="Segoe Fluent Icons" Foreground="#107C41" VerticalAlignment="Center"/>
                                             <TextBlock VerticalAlignment="Center"
                                                        Text="{x:Bind ViewModel.ExcelFilePathDisplayText, Mode=OneWay}"
-                                                       TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind ViewModel.ExcelFilePath, Mode=OneWay}"
-                                                       Foreground="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToColorConverter}, ConverterParameter='{ThemeResource TextFillColorSecondaryBrush};{ThemeResource TextFillColorPrimaryBrush}'}"
-                                                       FontStyle="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToFontStyleConverter}, ConverterParameter='Italic;Normal'}"/>
+                                                       ToolTipService.ToolTip="{x:Bind ViewModel.ExcelFilePath, Mode=OneWay}"
+                                                       FontStyle="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToFontStyleConverter}, ConverterParameter='Italic;Normal'}"
+                                                       Foreground="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToColorConverter}, ConverterParameter='TextFillColorSecondaryBrush;TextFillColorPrimaryBrush'}"/>
                                         </StackPanel>
                                     </Border>
                                     <Button Grid.Column="1" Command="{x:Bind ViewModel.BrowseExcelFileCommand}" Style="{ThemeResource AccentButtonStyle}">
@@ -106,8 +108,264 @@
                                     </Button>
                                 </Grid>
 
+                                <StackPanel Spacing="16"
+                                            Visibility="{x:Bind ViewModel.IsMultiTableMode, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="已添加的Excel文件" />
+
+                                    <ListView ItemsSource="{x:Bind ViewModel.MultiTableData.Tables, Mode=OneWay}"
+                                              SelectionMode="None"
+                                              BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                              BorderThickness="1"
+                                              CornerRadius="{ThemeResource ControlCornerRadius}"
+                                              MaxHeight="200">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:ExcelData">
+                                                <Grid ColumnSpacing="8" Padding="12,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0" 
+                                                               VerticalAlignment="Center"
+                                                               Text="{x:Bind SourceFileName}" 
+                                                               TextTrimming="CharacterEllipsis"
+                                                               ToolTipService.ToolTip="{x:Bind SourceFileName}"/>
+
+                                                    <Button Grid.Column="1" 
+                                                            Command="{Binding ElementName=self, Path=ViewModel.RemoveTableCommand}"
+                                                            CommandParameter="{x:Bind}"
+                                                            Style="{ThemeResource SubtleButtonStyle}" 
+                                                            VerticalAlignment="Center"
+                                                            ToolTipService.ToolTip="移除文件">
+                                                        <FontIcon Glyph="&#xE74D;" FontFamily="Segoe Fluent Icons" FontSize="14" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="匹配键" VerticalAlignment="Center" />
+                                        <ComboBox Grid.Column="1" 
+                                                  ItemsSource="{x:Bind ViewModel.AvailableKeys, Mode=OneWay}"
+                                                  SelectedItem="{x:Bind ViewModel.SelectedKey, Mode=TwoWay}"
+                                                  PlaceholderText="根据哪个列标题合并数据？" />
+                                    </Grid>
+
+                                    <Border Background="{ThemeResource LayerFillColorDefaultBrush}" 
+                                            Padding="12" 
+                                            CornerRadius="{ThemeResource ControlCornerRadius}">
+                                        <TextBlock Text="{x:Bind ViewModel.MergeSummary, Mode=OneWay, FallbackValue='请选择匹配键以生成预览...'}" 
+                                                   TextWrapping="Wrap" 
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Border>
+
+                                </StackPanel>
+
                             </StackPanel>
                         </Border>
+
+                        <Border Style="{ThemeResource CardBorderStyle}">
+                            <StackPanel Margin="16" Spacing="16">
+
+                                <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="Word 模板" />
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" 
+                                            Background="{ThemeResource ControlFillColorInputActiveBrush}" 
+                                            CornerRadius="{ThemeResource ControlCornerRadius}" 
+                                            MinHeight="32" Padding="8,6">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE724;" FontFamily="Segoe Fluent Icons" Foreground="#2863B4" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="{x:Bind ViewModel.WordTemplatePathDisplayText, Mode=OneWay}"
+                                                       TextTrimming="CharacterEllipsis" 
+                                                       ToolTipService.ToolTip="{x:Bind ViewModel.WordTemplatePath, Mode=OneWay}"
+                                                       Foreground="{x:Bind ViewModel.WordTemplatePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToColorConverter}, ConverterParameter='{ThemeResource TextFillColorSecondaryBrush};{ThemeResource TextFillColorPrimaryBrush}'}"
+                                                       FontStyle="{x:Bind ViewModel.WordTemplatePathIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToFontStyleConverter}, ConverterParameter='Italic;Normal'}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button Grid.Column="1" Command="{x:Bind ViewModel.BrowseWordTemplateCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon Glyph="&#xE8E5;" FontFamily="Segoe Fluent Icons"/>
+                                            <TextBlock Text="浏览" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="输出设置" Margin="0,8,0,0"/>
+
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" 
+                                            Background="{ThemeResource ControlFillColorInputActiveBrush}" 
+                                            CornerRadius="{ThemeResource ControlCornerRadius}" 
+                                            MinHeight="32" Padding="8,6">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE8DA;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="{x:Bind ViewModel.OutputDirectoryDisplayText, Mode=OneWay}"
+                                                       TextTrimming="CharacterEllipsis" 
+                                                       ToolTipService.ToolTip="{x:Bind ViewModel.OutputDirectory, Mode=OneWay}"
+                                                       FontStyle="{x:Bind ViewModel.OutputDirectoryIsPlaceholder, Mode=OneWay, Converter={StaticResource BoolToFontStyleConverter}, ConverterParameter='Italic;Normal'}"
+                                                       Foreground="{x:Bind ViewModel.OutputDirectoryForegroundBrush, Mode=OneWay}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button Grid.Column="1" Command="{x:Bind ViewModel.BrowseOutputDirectoryCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon Glyph="&#xE8E5;" FontFamily="Segoe Fluent Icons"/>
+                                            <TextBlock Text="浏览" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <TextBox Header="输出文件名模板" 
+                                         Text="{x:Bind ViewModel.OutputFileNameTemplate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Description="可用占位符: {序号}, {日期}, {时间}, 以及Excel中的所有列标题, 例如 {姓名}。"/>
+
+                                <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" Margin="0,8" />
+
+                                <Button Command="{x:Bind ViewModel.GenerateDocumentsCommand}" 
+                                        Style="{ThemeResource AccentButtonStyle}" 
+                                        HorizontalAlignment="Stretch" 
+                                        Height="40">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <FontIcon Glyph="&#xE74E;" FontFamily="Segoe Fluent Icons" FontSize="20"/>
+                                        <TextBlock Text="开始生成文档" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Spacing="16">
+
+                            <Expander IsExpanded="{x:Bind ViewModel.EnableIdCardExtraction, Mode=TwoWay}">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <FontIcon Glyph="&#xE771;" FontFamily="Segoe Fluent Icons"/>
+                                        <TextBlock Text="身份证信息提取" FontWeight="SemiBold"/>
+                                        <TextBlock Text="(从身份证号中提取性别、生日、年龄等)" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Expander.Header>
+
+                                <StackPanel Margin="56,16,16,16" Spacing="16">
+                                    <ComboBox Header="包含身份证号的列"
+                                              ItemsSource="{x:Bind ViewModel.AvailableIdCardColumns, Mode=OneWay}"
+                                              SelectedItem="{x:Bind ViewModel.SelectedIdCardColumn, Mode=TwoWay}"
+                                              PlaceholderText="请选择包含身份证号码的列"/>
+                                    <InfoBar Title="可用占位符"
+                                             Severity="Informational"
+                                             IsOpen="True">
+                                        <TextBlock Text="{x:Bind ViewModel.IdCardPlaceholdersText, Mode=OneWay}" TextWrapping="Wrap"/>
+                                    </InfoBar>
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander IsExpanded="{x:Bind ViewModel.UseImageReplacement, Mode=TwoWay}">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <FontIcon Glyph="&#xE774;" FontFamily="Segoe Fluent Icons"/>
+                                        <TextBlock Text="图片批量替换" FontWeight="SemiBold"/>
+                                        <TextBlock Text="(将图片填充到Word或Excel模板中)" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Expander.Header>
+
+                                <StackPanel Margin="56,16,16,16" Spacing="16">
+                                    <ComboBox Header="图片文件名与哪一列的值匹配？"
+                                              ItemsSource="{x:Bind ViewModel.AvailableColumns, Mode=OneWay}"
+                                              SelectedItem="{x:Bind ViewModel.SelectedImageMatchingColumn, Mode=TwoWay}"
+                                              PlaceholderText="例如：选择“姓名”列，则会查找“张三.jpg”"/>
+
+                                    <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="图片所在目录" Margin="0,8,0,0"/>
+                                    <ListView ItemsSource="{x:Bind ViewModel.ImageDirectories, Mode=OneWay}"
+                                              SelectionMode="None"
+                                              BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                              BorderThickness="1"
+                                              CornerRadius="{ThemeResource ControlCornerRadius}"
+                                              MinHeight="80"
+                                              MaxHeight="220">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:ImageSourceDirectory">
+                                                <Grid ColumnSpacing="8" Padding="12,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4">
+                                                        <TextBlock Text="{x:Bind DirectoryName}" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{x:Bind DirectoryPath}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+                                                        <Run Text="{x:Bind ImageFiles.Count, Mode=OneWay}" />
+                                                        <Run Text="个文件"/>
+                                                    </TextBlock>
+
+                                                    <Button Grid.Column="2"
+                                                            Command="{Binding ElementName=self, Path=ViewModel.RemoveImageDirectoryCommand}"
+                                                            CommandParameter="{x:Bind}"
+                                                            Style="{ThemeResource SubtleButtonStyle}" 
+                                                            VerticalAlignment="Center"
+                                                            ToolTipService.ToolTip="移除目录">
+                                                        <FontIcon Glyph="&#xE74D;" FontFamily="Segoe Fluent Icons" FontSize="14" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Command="{x:Bind ViewModel.AddImageDirectoryCommand}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon Glyph="&#xECC8;" FontFamily="Segoe Fluent Icons"/>
+                                                <TextBlock Text="添加目录"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{x:Bind ViewModel.ClearAllImageDirectoriesCommand}" Style="{ThemeResource DefaultButtonStyle}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon Glyph="&#xE74D;" FontFamily="Segoe Fluent Icons"/>
+                                                <TextBlock Text="全部清除"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+
+                                    <Grid ColumnSpacing="16" Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0" 
+                                                  Header="图片填充模式"
+                                                  ItemsSource="{x:Bind ViewModel.ImageFillModeItems, Mode=OneWay}"
+                                                  SelectedItem="{x:Bind ViewModel.SelectedImageFillModeItem, Mode=TwoWay}"
+                                                  DisplayMemberPath="Name"/>
+                                        <NumberBox Grid.Column="1"
+                                                   Header="填充比例 (%)"
+                                                   Value="{x:Bind ViewModel.ImageFillPercentage, Mode=TwoWay}"
+                                                   Minimum="1"
+                                                   Maximum="100"
+                                                   SpinButtonPlacementMode="Compact"
+                                                   SmallChange="5"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Expander>
+
+                        </StackPanel>
 
                         <Border Margin="0,0,0,0" 
                                 CornerRadius="4"
@@ -167,9 +425,7 @@
                                                        Text="{x:Bind ViewModel.ExcelFilePathDisplayText, Mode=OneWay}"
                                                        TextTrimming="CharacterEllipsis" 
                                                        ToolTipService.ToolTip="{x:Bind ViewModel.ExcelFilePath, Mode=OneWay}"
-                                                       Foreground="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, 
-                                                                            Converter={StaticResource BoolToColorConverter}, 
-                                                                            ConverterParameter='{ThemeResource TextFillColorSecondaryBrush};{ThemeResource TextFillColorPrimaryBrush}'}"
+                                                       Foreground="{x:Bind ViewModel.ExcelFilePathForegroundBrush, Mode=OneWay}"
                                                        FontStyle="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, 
                                                                          Converter={StaticResource BoolToFontStyleConverter}, 
                                                                          ConverterParameter='Italic;Normal'}"/>
@@ -224,7 +480,7 @@
                         </Button>
                     </Grid>
                 </Border>
-                
+
             </Grid>
         </Border>
 
