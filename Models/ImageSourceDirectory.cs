@@ -1,37 +1,39 @@
-﻿namespace DocTransform.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
-/// <summary>
-///     图片源目录，用于存储图片目录信息和对应的匹配设置
-/// </summary>
-public class ImageSourceDirectory
+namespace DocTransform.Models; // 确保命名空间与您项目一致
+
+public partial class ImageSourceDirectory : ObservableObject
 {
-    /// <summary>
-    ///     目录完整路径
-    /// </summary>
-    public string DirectoryPath { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string _directoryPath = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlaceholderName))]
+    private string _directoryName = string.Empty;
+
+    [ObservableProperty]
+    private string _matchingColumn = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _imageFiles = new();
 
     /// <summary>
-    ///     目录名称，将用作占位符名称
+    ///     占位符名称，格式为 {目录名}。
+    ///     修正：引用私有字段 _directoryName
     /// </summary>
-    public string DirectoryName { get; set; } = string.Empty;
+    public string PlaceholderName => $"{{{_directoryName}}}";
 
     /// <summary>
-    ///     用于匹配图片的数据列名
+    ///     图片文件数量。
+    ///     修正：引用私有字段 _imageFiles
     /// </summary>
-    public string MatchingColumn { get; set; } = string.Empty;
+    public int ImageCount => _imageFiles.Count;
 
-    /// <summary>
-    ///     图片文件列表
-    /// </summary>
-    public List<string> ImageFiles { get; set; } = new();
-
-    /// <summary>
-    ///     占位符名称，格式为 {目录名}
-    /// </summary>
-    public string PlaceholderName => $"{{{DirectoryName}}}";
-
-    /// <summary>
-    ///     图片文件数量
-    /// </summary>
-    public int ImageCount => ImageFiles.Count;
+    public ImageSourceDirectory()
+    {
+        // 修正：在私有字段 _imageFiles 上监听事件
+        _imageFiles.CollectionChanged += (s, e) => OnPropertyChanged(nameof(ImageCount));
+    }
 }
