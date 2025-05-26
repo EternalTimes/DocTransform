@@ -1,5 +1,7 @@
 ﻿namespace DocTransform.Models;
 
+using System.Collections.Generic;
+
 /// <summary>
 ///     图片填充模式枚举
 /// </summary>
@@ -26,8 +28,8 @@ public enum ImageFillMode
 /// </summary>
 public class ImageFillModeItem
 {
-    public ImageFillMode Value { get; set; }
-    public string DisplayName { get; set; }
+    public required ImageFillMode Value { get; set; }
+    public required string DisplayName { get; set; }
 
     public static List<ImageFillModeItem> GetAll()
     {
