@@ -1,20 +1,15 @@
 ﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-
 using DocTransform.Models;
+using NPOI.XSSF.UserModel.Helpers;
 
 namespace DocTransform.Services;
-
-/// <summary>
-///     Excel模板处理服务（NPOI重构）
-/// </summary>
 
 public enum ImageFillMode
 {
@@ -95,84 +90,12 @@ public class ExcelTemplateService
         });
     }
 
-        public async Task<(bool Success, string Message)> ProcessTemplateAsync(
-        string templatePath,
-        string outputPath,
-        Dictionary<string, string> data,
-        IProgress<int> progress = null)
-    {
-        if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath)) return (false, "模板文件不存在");
-        if (string.IsNullOrEmpty(outputPath)) return (false, "输出路径无效");
-
-        var outputDir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
-
-        return await Task.Run(() =>
-        {
-            try
-            {
-                File.Copy(templatePath, outputPath, true);
-
-                using var fs = new FileStream(outputPath, FileMode.Open, FileAccess.ReadWrite);
-                IWorkbook workbook = new XSSFWorkbook(fs);
-
-                int totalSheets = workbook.NumberOfSheets;
-                int processedSheets = 0;
-
-                for (int s = 0; s < totalSheets; s++)
-                {
-                    var sheet = workbook.GetSheetAt(s);
-
-                    for (int r = sheet.FirstRowNum; r <= sheet.LastRowNum; r++)
-                    {
-                        var row = sheet.GetRow(r);
-                        if (row == null) continue;
-
-                        foreach (var cell in row.Cells)
-                        {
-                            if (cell.CellType == CellType.String)
-                            {
-                                string value = cell.StringCellValue;
-                                string newValue = value;
-
-                                foreach (var item in data)
-                                {
-                                    var placeholder = $"{{{item.Key}}}";
-                                    if (newValue.Contains(placeholder))
-                                    {
-                                        newValue = newValue.Replace(placeholder, item.Value ?? string.Empty);
-                                    }
-                                }
-
-                                if (newValue != value)
-                                    cell.SetCellValue(newValue);
-                            }
-                        }
-                    }
-
-                    processedSheets++;
-                    progress?.Report(processedSheets * 100 / totalSheets);
-                }
-
-                using var outFs = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
-                workbook.Write(outFs);
-                return (true, "Excel模板处理成功");
-            }
-            catch (Exception ex)
-            {
-                return (false, $"处理Excel模板时出错: {ex.Message}");
-            }
-        });
-    }
-
-
     public async Task<(bool Success, string Message)> ProcessTemplateWithImagesAsync(
         string templatePath,
         string outputPath,
         Dictionary<string, string> data,
         Dictionary<string, string> imagePaths,
-        IProgress<int> progress = null)
+        IProgress<int>? progress = null)
     {
         if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath)) return (false, "模板文件不存在");
         if (string.IsNullOrEmpty(outputPath)) return (false, "输出路径无效");
@@ -209,22 +132,19 @@ public class ExcelTemplateService
                                 string value = cell.StringCellValue;
                                 string newValue = value;
 
-                                // 普通文本占位符替换
                                 foreach (var item in data)
                                 {
                                     var placeholder = $"{{{item.Key}}}";
-                                    if (newValue.Contains(placeholder))
-                                        newValue = newValue.Replace(placeholder, item.Value ?? string.Empty);
+                                    newValue = newValue.Replace(placeholder, item.Value ?? string.Empty);
                                 }
 
-                                // 图像占位符处理
                                 var match = Regex.Match(newValue, @"^{(.*?)\.img}$");
                                 if (match.Success)
                                 {
                                     var key = match.Groups[1].Value;
-                                    if (imagePaths.TryGetValue(key, out string imagePath) && File.Exists(imagePath))
+                                    if (imagePaths.TryGetValue(key, out string? imagePath) && File.Exists(imagePath))
                                     {
-                                        InsertImage(workbook, sheet, imagePath, r, cell.ColumnIndex);
+                                        InsertImage(workbook, sheet, imagePath, r, cell.ColumnIndex, ImageFillMode.Fit);
                                         newValue = string.Empty;
                                     }
                                 }
@@ -241,16 +161,16 @@ public class ExcelTemplateService
 
                 using var outFs = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
                 workbook.Write(outFs);
-                return (true, "Excel模板图像处理成功");
+                return (true, "模板处理完成");
             }
             catch (Exception ex)
             {
-                return (false, $"处理模板图像时出错: {ex.Message}");
+                return (false, $"处理模板出错: {ex.Message}");
             }
         });
     }
 
-    public void InsertImage(
+    private void InsertImage(
         IWorkbook workbook,
         ISheet sheet,
         string imagePath,
@@ -276,16 +196,14 @@ public class ExcelTemplateService
         switch (mode)
         {
             case ImageFillMode.Stretch:
-                picture.Resize(1.0); // 拉伸：完全填满
+                picture.Resize(1.0);
                 break;
             case ImageFillMode.Fit:
-                picture.Resize(); // 适应：等比例缩放
+                picture.Resize();
                 break;
             case ImageFillMode.Fill:
-                // Fill：拉伸后居中，可扩展进一步控制
-                picture.Resize(1.2); // 稍微放大填充
+                picture.Resize(1.2);
                 break;
         }
     }
-
 }
