@@ -1,92 +1,90 @@
-﻿using System.Diagnostics;
+﻿using ImageMagick;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DocTransform.Services;
 
-/// <summary>
-///     图片处理服务，提供图片文件扫描、匹配和处理功能
-/// </summary>
 public class ImageProcessingService
 {
-    /// <summary>
-    ///     获取支持的图片文件扩展名列表
-    /// </summary>
-    public IEnumerable<string> SupportedImageExtensions => new[]
+    private static readonly string[] SupportedExtensions = new[]
     {
-        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".webp", ".ico"
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tif", ".tiff",
+        ".svg", ".ico", ".heic", ".heif", ".psd", ".ai"
     };
 
     /// <summary>
-    ///     扫描指定目录，获取所有支持的图片文件
+    /// 获取目录下支持的图像文件路径列表
     /// </summary>
-    /// <param name="directoryPath">目录路径</param>
-    /// <returns>图片文件路径列表</returns>
-    public async Task<List<string>> ScanDirectoryForImagesAsync(string directoryPath)
+    public async Task<List<string>> GetImageFilesAsync(string directory)
     {
-        if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath)) return new List<string>();
+        return await Task.Run(() =>
+        {
+            if (!Directory.Exists(directory))
+                return new List<string>();
 
+            return Directory.EnumerateFiles(directory, "*.*", SearchOption.TopDirectoryOnly)
+                            .Where(file => SupportedExtensions.Contains(Path.GetExtension(file).ToLower()))
+                            .ToList();
+        });
+    }
+
+    /// <summary>
+    /// 获取图像的尺寸（宽，高）
+    /// </summary>
+    public async Task<(int Width, int Height)?> GetImageSizeAsync(string path)
+    {
         return await Task.Run(() =>
         {
             try
             {
-                return Directory.GetFiles(directoryPath)
-                    .Where(file => SupportedImageExtensions.Contains(
-                        Path.GetExtension(file).ToLowerInvariant()))
-                    .ToList();
+                using var image = new MagickImage(path);
+                return (image.Width, image.Height);
             }
-            catch (Exception ex)
+            catch
             {
-                Debug.WriteLine($"扫描图片目录时出错: {ex.Message}");
-                return new List<string>();
+                return null;
             }
         });
     }
 
     /// <summary>
-    ///     根据匹配值查找对应的图片文件
+    /// 批量加载图像信息（路径，宽，高）
     /// </summary>
-    /// <param name="imageFiles">图片文件列表</param>
-    /// <param name="matchValue">匹配值（通常是列值）</param>
-    /// <returns>匹配的图片文件路径，如果没有匹配则返回null</returns>
-    public string FindMatchingImage(List<string> imageFiles, string matchValue)
+    public async Task<List<(string Path, int Width, int Height)>> LoadImageInfoAsync(IEnumerable<string> paths)
     {
-        if (string.IsNullOrEmpty(matchValue) || imageFiles == null || imageFiles.Count == 0) return null;
+        var result = new List<(string Path, int Width, int Height)>();
 
-        // 移除扩展名后进行比较
-        var valueWithoutExtension = Path.GetFileNameWithoutExtension(matchValue);
+        foreach (var path in paths)
+        {
+            var size = await GetImageSizeAsync(path);
+            if (size.HasValue)
+                result.Add((path, size.Value.Width, size.Value.Height));
+        }
 
-        // 查找完全匹配的文件名
-        var exactMatch = imageFiles.FirstOrDefault(img =>
-            Path.GetFileNameWithoutExtension(img).Equals(
-                valueWithoutExtension,
-                StringComparison.OrdinalIgnoreCase));
-
-        if (!string.IsNullOrEmpty(exactMatch)) return exactMatch;
-
-        // 如果没有完全匹配，查找包含匹配值的文件名
-        return imageFiles.FirstOrDefault(img =>
-            Path.GetFileNameWithoutExtension(img).Contains(
-                valueWithoutExtension,
-                StringComparison.OrdinalIgnoreCase));
+        return result;
     }
 
     /// <summary>
-    ///     从文件加载图片
+    /// 将图像转换为 PNG 格式并保存到目标路径
     /// </summary>
-    /// <param name="imagePath">图片文件路径</param>
-    /// <returns>图片对象，如果加载失败则返回null</returns>
-    public Image LoadImageFromFile(string imagePath)
+    public async Task<bool> ConvertToPngAsync(string inputPath, string outputPath)
     {
-        if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath)) return null;
-
-        try
+        return await Task.Run(() =>
         {
-            return Image.FromFile(imagePath);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"加载图片失败: {ex.Message}");
-            return null;
-        }
+            try
+            {
+                using var image = new MagickImage(inputPath);
+                image.Format = MagickFormat.Png;
+                image.Write(outputPath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        });
     }
 }
