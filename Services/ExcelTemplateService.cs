@@ -87,7 +87,76 @@ public class ExcelTemplateService
         });
     }
 
-    // 其他方法（如模板替换）建议按需重写，并兼容 NPOI 插图逻辑
+        public async Task<(bool Success, string Message)> ProcessTemplateAsync(
+        string templatePath,
+        string outputPath,
+        Dictionary<string, string> data,
+        IProgress<int> progress = null)
+    {
+        if (string.IsNullOrEmpty(templatePath) || !File.Exists(templatePath)) return (false, "模板文件不存在");
+        if (string.IsNullOrEmpty(outputPath)) return (false, "输出路径无效");
+
+        var outputDir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            Directory.CreateDirectory(outputDir);
+
+        return await Task.Run(() =>
+        {
+            try
+            {
+                File.Copy(templatePath, outputPath, true);
+
+                using var fs = new FileStream(outputPath, FileMode.Open, FileAccess.ReadWrite);
+                IWorkbook workbook = new XSSFWorkbook(fs);
+
+                int totalSheets = workbook.NumberOfSheets;
+                int processedSheets = 0;
+
+                for (int s = 0; s < totalSheets; s++)
+                {
+                    var sheet = workbook.GetSheetAt(s);
+
+                    for (int r = sheet.FirstRowNum; r <= sheet.LastRowNum; r++)
+                    {
+                        var row = sheet.GetRow(r);
+                        if (row == null) continue;
+
+                        foreach (var cell in row.Cells)
+                        {
+                            if (cell.CellType == CellType.String)
+                            {
+                                string value = cell.StringCellValue;
+                                string newValue = value;
+
+                                foreach (var item in data)
+                                {
+                                    var placeholder = $"{{{item.Key}}}";
+                                    if (newValue.Contains(placeholder))
+                                    {
+                                        newValue = newValue.Replace(placeholder, item.Value ?? string.Empty);
+                                    }
+                                }
+
+                                if (newValue != value)
+                                    cell.SetCellValue(newValue);
+                            }
+                        }
+                    }
+
+                    processedSheets++;
+                    progress?.Report(processedSheets * 100 / totalSheets);
+                }
+
+                using var outFs = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+                workbook.Write(outFs);
+                return (true, "Excel模板处理成功");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"处理Excel模板时出错: {ex.Message}");
+            }
+        });
+    }
 
 
 
