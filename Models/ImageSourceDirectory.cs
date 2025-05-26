@@ -2,38 +2,64 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
-namespace DocTransform.Models; // 确保命名空间与您项目一致
+namespace DocTransform.Models;
 
-public partial class ImageSourceDirectory : ObservableObject
+public class ImageSourceDirectory : ObservableObject
 {
-    [ObservableProperty]
     private string _directoryPath = string.Empty;
+    public string DirectoryPath
+    {
+        get => _directoryPath;
+        set => SetProperty(ref _directoryPath, value);
+    }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PlaceholderName))]
     private string _directoryName = string.Empty;
+    public string DirectoryName
+    {
+        get => _directoryName;
+        set
+        {
+            if (SetProperty(ref _directoryName, value))
+            {
+                OnPropertyChanged(nameof(PlaceholderName));
+            }
+        }
+    }
 
-    [ObservableProperty]
     private string _matchingColumn = string.Empty;
+    public string MatchingColumn
+    {
+        get => _matchingColumn;
+        set => SetProperty(ref _matchingColumn, value);
+    }
 
-    [ObservableProperty]
     private ObservableCollection<string> _imageFiles = new();
+    public ObservableCollection<string> ImageFiles
+    {
+        get => _imageFiles;
+        set
+        {
+            if (_imageFiles != null)
+                _imageFiles.CollectionChanged -= ImageFiles_CollectionChanged;
 
-    /// <summary>
-    ///     占位符名称，格式为 {目录名}。
-    ///     修正：引用私有字段 _directoryName
-    /// </summary>
-    public string PlaceholderName => $"{{{_directoryName}}}";
+            if (SetProperty(ref _imageFiles, value))
+            {
+                _imageFiles.CollectionChanged += ImageFiles_CollectionChanged;
+                OnPropertyChanged(nameof(ImageCount));
+            }
+        }
+    }
 
-    /// <summary>
-    ///     图片文件数量。
-    ///     修正：引用私有字段 _imageFiles
-    /// </summary>
-    public int ImageCount => _imageFiles.Count;
+    public string PlaceholderName => $"{{{DirectoryName}}}";
+    public int ImageCount => ImageFiles.Count;
 
     public ImageSourceDirectory()
     {
-        // 修正：在私有字段 _imageFiles 上监听事件
-        _imageFiles.CollectionChanged += (s, e) => OnPropertyChanged(nameof(ImageCount));
+        _imageFiles.CollectionChanged += ImageFiles_CollectionChanged;
+    }
+
+    private void ImageFiles_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(ImageCount));
     }
 }
