@@ -1,135 +1,112 @@
-﻿using System.IO;
-using ClosedXML.Excel;
+﻿using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+
 using DocTransform.Models;
-using OfficeOpenXml;
 
 namespace DocTransform.Services;
 
 /// <summary>
-///     Excel文件处理服务
+///     基于 NPOI 的 Excel 文件处理服务
 /// </summary>
 public class ExcelService
 {
-    // 静态构造函数，用于设置EPPlus的LicenseContext
-    static ExcelService()
-    {
-        // 设置EPPlus的LicenseContext为非商业用途
-        ExcelPackage.License.SetNonCommercialOrganization("xihan123");
-    }
-
     /// <summary>
-    ///     异步读取Excel文件
+    ///     异步读取 Excel 文件的第一个工作表
     /// </summary>
-    /// <param name="filePath">Excel文件路径</param>
-    /// <returns>提取的Excel数据</returns>
     public async Task<ExcelData> ReadExcelFileAsync(string filePath)
     {
         return await Task.Run(() =>
         {
-            var excelData = new ExcelData();
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Excel文件不存在", filePath);
 
-            // 验证文件存在
-            if (!File.Exists(filePath)) throw new FileNotFoundException("Excel文件不存在", filePath);
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            IWorkbook workbook = new XSSFWorkbook(stream);
+            var sheet = workbook.GetSheetAt(0);
 
-            using var workbook = new XLWorkbook(filePath);
-            var worksheet = workbook.Worksheets.First();
+            if (sheet == null)
+                throw new InvalidOperationException("Excel文件不包含工作表");
 
-            // 获取标题行（第一行）
-            var headerRow = worksheet.Row(1);
-            var columnCount = headerRow.CellsUsed().Count();
-
-            // 如果没有数据，抛出异常
-            if (columnCount == 0) throw new InvalidOperationException("Excel文件不包含任何数据");
-
-            for (var i = 1; i <= columnCount; i++)
-            {
-                var headerText = headerRow.Cell(i).GetString().Trim();
-                if (!string.IsNullOrEmpty(headerText)) excelData.Headers.Add(headerText);
-            }
-
-            // 读取数据行
-            var lastRow = worksheet.LastRowUsed().RowNumber();
-            for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
-            {
-                var dataRow = new Dictionary<string, string>();
-                var row = worksheet.Row(rowNumber);
-
-                for (var colIndex = 0; colIndex < excelData.Headers.Count; colIndex++)
-                {
-                    var header = excelData.Headers[colIndex];
-                    var cellValue = row.Cell(colIndex + 1).GetString();
-                    dataRow[header] = cellValue;
-                }
-
-                excelData.Rows.Add(dataRow);
-            }
-
+            var excelData = ParseSheet(sheet);
+            excelData.SourceFileName = Path.GetFileName(filePath);
             return excelData;
         });
     }
 
-
-    // 读取Excel文件中所有工作表的方法
+    /// <summary>
+    ///     异步读取 Excel 文件中所有非空工作表
+    /// </summary>
     public async Task<List<ExcelData>> ReadAllSheetsAsync(string filePath)
     {
         return await Task.Run(() =>
         {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("Excel文件不存在", filePath);
+
             var result = new List<ExcelData>();
 
-            try
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            IWorkbook workbook = new XSSFWorkbook(stream);
+
+            for (int i = 0; i < workbook.NumberOfSheets; i++)
             {
-                using (var package = new ExcelPackage(new FileInfo(filePath)))
-                {
-                    foreach (var worksheet in package.Workbook.Worksheets)
-                    {
-                        // 跳过空工作表
-                        if (worksheet.Dimension == null) continue;
+                var sheet = workbook.GetSheetAt(i);
+                if (sheet == null || sheet.LastRowNum < 1) continue;
 
-                        var sheetData = new ExcelData
-                        {
-                            SourceFileName = $"{Path.GetFileName(filePath)} - {worksheet.Name}"
-                        };
+                var excelData = ParseSheet(sheet);
+                excelData.SourceFileName = $"{Path.GetFileName(filePath)} - {sheet.SheetName}";
 
-                        // 读取列标题
-                        var colCount = worksheet.Dimension.End.Column;
-                        for (var col = 1; col <= colCount; col++)
-                        {
-                            var headerCell = worksheet.Cells[1, col].Text.Trim();
-                            if (!string.IsNullOrEmpty(headerCell)) sheetData.Headers.Add(headerCell);
-                        }
-
-                        // 读取数据行
-                        var rowCount = worksheet.Dimension.End.Row;
-                        for (var row = 2; row <= rowCount; row++) // 从第二行开始，跳过标题行
-                        {
-                            var dataRow = new Dictionary<string, string>();
-                            var hasData = false;
-
-                            for (var col = 1; col <= colCount; col++)
-                            {
-                                if (col > sheetData.Headers.Count) continue;
-
-                                var header = sheetData.Headers[col - 1];
-                                var cellValue = worksheet.Cells[row, col].Text.Trim();
-
-                                dataRow[header] = cellValue;
-                                if (!string.IsNullOrEmpty(cellValue)) hasData = true;
-                            }
-
-                            if (hasData) sheetData.Rows.Add(dataRow);
-                        }
-
-                        // 只添加非空的工作表
-                        if (sheetData.Headers.Count > 0 && sheetData.Rows.Count > 0) result.Add(sheetData);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"读取Excel文件时出错: {ex.Message}", ex);
+                if (excelData.Headers.Count > 0 && excelData.Rows.Count > 0)
+                    result.Add(excelData);
             }
 
             return result;
         });
+    }
+
+    /// <summary>
+    ///     从工作表解析 ExcelData
+    /// </summary>
+    private ExcelData ParseSheet(ISheet sheet)
+    {
+        var data = new ExcelData();
+        var headerRow = sheet.GetRow(0);
+
+        if (headerRow == null) return data;
+
+        for (int i = 0; i < headerRow.LastCellNum; i++)
+        {
+            var cell = headerRow.GetCell(i);
+            var header = cell?.ToString()?.Trim();
+            if (!string.IsNullOrEmpty(header))
+                data.Headers.Add(header);
+        }
+
+        for (int r = 1; r <= sheet.LastRowNum; r++)
+        {
+            var row = sheet.GetRow(r);
+            if (row == null) continue;
+
+            var rowData = new Dictionary<string, string>();
+            bool hasData = false;
+
+            for (int c = 0; c < data.Headers.Count; c++)
+            {
+                var cellValue = row.GetCell(c)?.ToString()?.Trim() ?? string.Empty;
+                rowData[data.Headers[c]] = cellValue;
+                if (!string.IsNullOrEmpty(cellValue)) hasData = true;
+            }
+
+            if (hasData)
+                data.Rows.Add(rowData);
+        }
+
+        return data;
     }
 }
