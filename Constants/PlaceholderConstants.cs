@@ -1,4 +1,6 @@
-﻿namespace DocTransform.Constants;
+﻿using System.Collections.Generic;
+
+namespace DocTransform.Constants;
 
 public static class PlaceholderConstants
 {
