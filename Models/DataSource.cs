@@ -1,12 +1,16 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
+using System;
+using System.Collections.Generic;
+
 namespace DocTransform.Models;
 
 public class DataSource : ObservableObject
 {
-    private string _displayName;
+    private string _displayName = string.Empty;
 
-    private string _filePath;
+    private string _filePath = string.Empty;
+
 
     private bool _isEnabled = true;
 
