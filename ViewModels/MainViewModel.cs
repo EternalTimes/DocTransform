@@ -125,6 +125,39 @@ public partial class MainViewModel : ObservableObject
     private string _outputDirectory = string.Empty;
 
 
+    // 原始属性 1
+    [ObservableProperty]
+    private int _valueA;
+
+    // 原始属性 2
+    [ObservableProperty]
+    private string _valueBText;
+
+    // 当 ValueA 或 ValueBText 发生变化时，需要通知UI刷新 IsAGreaterThanB 的状态
+    partial void OnValueAChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsAGreaterThanB));
+    }
+    
+    partial void OnValueBTextChanged(string? value)
+    {
+        OnPropertyChanged(nameof(IsAGreaterThanB));
+    }
+
+    // ✨ 解决方案：创建新的计算属性，封装所有逻辑
+    public bool IsAGreaterThanB
+    {
+        get
+        {
+            // 将原来 GreaterThanConverter 中的逻辑搬到这里
+            if (int.TryParse(ValueBText, out var valueB))
+            {
+                return ValueA > valueB;
+            }
+            return false;
+        }
+    }
+
     public string CurrentTableModeText => IsMultiTableMode ? "多表格" : "单表格";
 
     public Brush CurrentTableModeForegroundBrush => new SolidColorBrush(IsMultiTableMode ? ((Color)Application.Current.Resources["SystemAccentColor"]) : ((Color)Application.Current.Resources["TextFillColorPrimary"]));

@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace DocTransform.Converters; // 确保命名空间正确
 
-public class StringListToStringConverter : IValueConverter
+public partial class StringListToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
