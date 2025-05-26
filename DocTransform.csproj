@@ -28,10 +28,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="Magick.NET-Q16-HDRI-AnyCPU" Version="14.6.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250513003" />
     <PackageReference Include="NPOI" Version="2.7.3" />
-    <PackageReference Include="SkiaSharp" Version="3.119.0" />
   </ItemGroup>
   
   <!--
