@@ -27,69 +27,6 @@ public class ExcelTemplateService
         _imageProcessingService = imageProcessingService;
     }
 
-    public async Task<bool> IsValidTemplateAsync(string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return false;
-
-        return await Task.Run(() =>
-        {
-            try
-            {
-                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                IWorkbook workbook = new XSSFWorkbook(fs);
-                return workbook.NumberOfSheets > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        });
-    }
-
-    public async Task<List<string>> ExtractPlaceholdersAsync(string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return new List<string>();
-
-        return await Task.Run(() =>
-        {
-            var placeholders = new HashSet<string>();
-            var regex = new Regex(@"{([^{}]+)}");
-
-            try
-            {
-                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-                IWorkbook workbook = new XSSFWorkbook(fs);
-
-                for (int s = 0; s < workbook.NumberOfSheets; s++)
-                {
-                    var sheet = workbook.GetSheetAt(s);
-                    for (int r = sheet.FirstRowNum; r <= sheet.LastRowNum; r++)
-                    {
-                        var row = sheet.GetRow(r);
-                        if (row == null) continue;
-
-                        foreach (var cell in row.Cells)
-                        {
-                            var text = cell?.ToString();
-                            if (!string.IsNullOrEmpty(text))
-                            {
-                                var matches = regex.Matches(text);
-                                foreach (Match match in matches)
-                                    placeholders.Add(match.Value);
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"提取占位符失败: {ex.Message}");
-            }
-
-            return new List<string>(placeholders);
-        });
-    }
-
     public async Task<(bool Success, string Message)> ProcessTemplateWithImagesAsync(
         string templatePath,
         string outputPath,
@@ -132,6 +69,8 @@ public class ExcelTemplateService
                                 string value = cell.StringCellValue;
                                 string newValue = value;
 
+                                var originalStyle = cell.CellStyle;
+
                                 foreach (var item in data)
                                 {
                                     var placeholder = $"{{{item.Key}}}";
@@ -144,13 +83,16 @@ public class ExcelTemplateService
                                     var key = match.Groups[1].Value;
                                     if (imagePaths.TryGetValue(key, out string? imagePath) && File.Exists(imagePath))
                                     {
-                                        InsertImage(workbook, sheet, imagePath, r, cell.ColumnIndex, ImageFillMode.Fit);
+                                        InsertImage(workbook, sheet, imagePath, r, cell.ColumnIndex, ImageFillMode.Fit, merge: true);
                                         newValue = string.Empty;
                                     }
                                 }
 
                                 if (newValue != value)
+                                {
                                     cell.SetCellValue(newValue);
+                                    cell.CellStyle = originalStyle;
+                                }
                             }
                         }
                     }
@@ -176,10 +118,19 @@ public class ExcelTemplateService
         string imagePath,
         int rowIndex,
         int colIndex,
-        ImageFillMode mode)
+        ImageFillMode mode,
+        bool merge = false)
     {
         var bytes = File.ReadAllBytes(imagePath);
         int pictureIdx = workbook.AddPicture(bytes, PictureType.PNG);
+
+        if (merge)
+        {
+            // 合并 2x2 区域作为插图目标区域
+            int row2 = rowIndex + 1;
+            int col2 = colIndex + 1;
+            sheet.AddMergedRegion(new NPOI.SS.Util.CellRangeAddress(rowIndex, row2, colIndex, col2));
+        }
 
         var drawing = sheet.CreateDrawingPatriarch();
         var anchor = new XSSFClientAnchor
@@ -188,6 +139,8 @@ public class ExcelTemplateService
             Row1 = rowIndex,
             Col2 = colIndex + 1,
             Row2 = rowIndex + 1,
+            Dx1 = 100, // 精细控制图像偏移量（单位EMU）
+            Dy1 = 50,
             AnchorType = AnchorType.MoveAndResize
         };
 
@@ -196,13 +149,13 @@ public class ExcelTemplateService
         switch (mode)
         {
             case ImageFillMode.Stretch:
-                picture.Resize(1.0);
+                picture.Resize(1.0); // 完全拉伸
                 break;
             case ImageFillMode.Fit:
-                picture.Resize();
+                picture.Resize(); // 保持比例适应单元格
                 break;
             case ImageFillMode.Fill:
-                picture.Resize(1.2);
+                picture.Resize(1.2); // 略微放大以填充
                 break;
         }
     }
