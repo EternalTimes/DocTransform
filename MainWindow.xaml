@@ -109,6 +109,83 @@
                             </StackPanel>
                         </Border>
 
+                        <Border Margin="0,0,0,0" 
+                                CornerRadius="4"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource AccentControlBorderBrushActive}"
+                                BorderThickness="1"
+                                AllowDrop="True"
+                                Padding="16,12">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                                <FontIcon Glyph="&#xE7AB;" 
+                                          FontFamily="Segoe Fluent Icons" 
+                                          FontSize="20" 
+                                          VerticalAlignment="Center"
+                                          Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                                <TextBlock Text="您可以将Excel文件或Word模板文件拖放到此窗口"
+                                           VerticalAlignment="Center"
+                                           FontWeight="SemiBold"
+                                           Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{ThemeResource CardBorderStyle}">
+                            <StackPanel Margin="16" Spacing="16">
+                                <TextBlock Style="{ThemeResource SubtitleTextBlockStyle}" Text="文件选择" />
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock VerticalAlignment="Center">
+                                        <Run Text="当前模式: "/>
+                                        <Run Text="{x:Bind ViewModel.CurrentTableModeText, Mode=OneWay}" 
+                                             FontWeight="Bold" 
+                                             Foreground="{x:Bind ViewModel.IsMultiTableMode, Mode=OneWay, 
+                                                                   Converter={StaticResource BoolToColorConverter}, 
+                                                                   ConverterParameter='SystemAccentColorBrush;TextFillColorPrimaryBrush'}"/>
+                                    </TextBlock>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock Text="多表格模式" VerticalAlignment="Center" ToolTipService.ToolTip="启用后可导入多个Excel表格并自动匹配数据" />
+                                        <ToggleButton IsChecked="{x:Bind ViewModel.IsMultiTableMode, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" 
+                                            Background="{ThemeResource ControlFillColorInputActiveBrush}" 
+                                            CornerRadius="{ThemeResource ControlCornerRadius}" 
+                                            MinHeight="32" Padding="8,6">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <FontIcon Glyph="&#xE72F;" FontFamily="Segoe Fluent Icons" Foreground="#107C41" VerticalAlignment="Center"/>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       Text="{x:Bind ViewModel.ExcelFilePathDisplayText, Mode=OneWay}"
+                                                       TextTrimming="CharacterEllipsis" 
+                                                       ToolTipService.ToolTip="{x:Bind ViewModel.ExcelFilePath, Mode=OneWay}"
+                                                       Foreground="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, 
+                                                                            Converter={StaticResource BoolToColorConverter}, 
+                                                                            ConverterParameter='{ThemeResource TextFillColorSecondaryBrush};{ThemeResource TextFillColorPrimaryBrush}'}"
+                                                       FontStyle="{x:Bind ViewModel.ExcelFilePathIsPlaceholder, Mode=OneWay, 
+                                                                         Converter={StaticResource BoolToFontStyleConverter}, 
+                                                                         ConverterParameter='Italic;Normal'}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button Grid.Column="1" Command="{x:Bind ViewModel.BrowseExcelFileCommand}" Style="{ThemeResource AccentButtonStyle}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon Glyph="&#xE72F;" FontFamily="Segoe Fluent Icons"/>
+                                            <TextBlock Text="{x:Bind ViewModel.ExcelButtonText, Mode=OneWay}" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </ScrollViewer>
 
