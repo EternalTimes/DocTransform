@@ -2,12 +2,14 @@
 using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DocTransform.Models;
-using NPOI.XSSF.UserModel.Helpers;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace DocTransform.Services;
 
@@ -20,7 +22,62 @@ public class ExcelTemplateService
         _imageProcessingService = imageProcessingService;
     }
 
-    public async Task<(bool Success, string Message)> ProcessTemplateWithImagesAsync(
+    public static async Task<bool> IsValidTemplateAsync(string templatePath)
+    {
+        return await Task.Run(() =>
+            File.Exists(templatePath) && Path.GetExtension(templatePath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase));
+    }
+
+    public static async Task<List<string>> ExtractPlaceholdersAsync(string templatePath)
+    {
+        return await Task.Run(() =>
+        {
+            var placeholders = new HashSet<string>();
+            using var fs = new FileStream(templatePath, FileMode.Open, FileAccess.Read);
+            var workbook = new XSSFWorkbook(fs);
+            for (int s = 0; s < workbook.NumberOfSheets; s++)
+            {
+                var sheet = workbook.GetSheetAt(s);
+                foreach (IRow row in sheet)
+                {
+                    foreach (ICell cell in row.Cells)
+                    {
+                        if (cell.CellType == CellType.String)
+                        {
+                            var matches = Regex.Matches(cell.StringCellValue, "\\{(.*?)\\}");
+                            foreach (Match match in matches)
+                                placeholders.Add(match.Groups[1].Value);
+                        }
+                    }
+                }
+            }
+            return placeholders.ToList();
+        });
+    }
+
+    public static async Task<(bool Success, string Message)> ProcessTemplateAsync(
+        string templatePath, string outputPath, Dictionary<string, string> data, object? _ = null)
+    {
+        return await ProcessTemplateWithImagesAsync(templatePath, outputPath, data, new Dictionary<string, string>());
+    }
+
+    public static async Task<(bool Success, string Message)> ProcessTemplateWithImagesAsync(
+        string templatePath,
+        string outputPath,
+        Dictionary<string, string> data,
+        ObservableCollection<ImageSourceDirectory> imageDirectories,
+        ImageFillMode _1,
+        int _2,
+        object? _3 = null)
+    {
+        var imagePaths = imageDirectories
+            .SelectMany(d => d.ImageFiles.Select(img => new { Key = Path.GetFileNameWithoutExtension(img), Path = img }))
+            .ToDictionary(k => k.Key, v => v.Path);
+
+        return await ProcessTemplateWithImagesAsync(templatePath, outputPath, data, imagePaths);
+    }
+
+    public static async Task<(bool Success, string Message)> ProcessTemplateWithImagesAsync(
         string templatePath,
         string outputPath,
         Dictionary<string, string> data,
@@ -41,7 +98,7 @@ public class ExcelTemplateService
                 File.Copy(templatePath, outputPath, true);
 
                 using var fs = new FileStream(outputPath, FileMode.Open, FileAccess.ReadWrite);
-                IWorkbook workbook = new XSSFWorkbook(fs);
+                var workbook = new XSSFWorkbook(fs);
 
                 int totalSheets = workbook.NumberOfSheets;
                 int processedSheets = 0;
@@ -70,11 +127,11 @@ public class ExcelTemplateService
                                     newValue = newValue.Replace(placeholder, item.Value ?? string.Empty);
                                 }
 
-                                var match = Regex.Match(newValue, @"^{(.*?)\.img}$");
+                                var match = Regex.Match(newValue, "^{(.*?)\\.img}$");
                                 if (match.Success)
                                 {
                                     var key = match.Groups[1].Value;
-                                    if (imagePaths.TryGetValue(key, out string? imagePath) && File.Exists(imagePath))
+                                    if (imagePaths.TryGetValue(key, out var imagePath) && imagePath is not null && File.Exists(imagePath))
                                     {
                                         InsertImage(workbook, sheet, imagePath, r, cell.ColumnIndex, ImageFillMode.Fit, merge: true);
                                         newValue = string.Empty;
@@ -105,8 +162,8 @@ public class ExcelTemplateService
         });
     }
 
-    private void InsertImage(
-        IWorkbook workbook,
+    private static void InsertImage(
+        XSSFWorkbook workbook,
         ISheet sheet,
         string imagePath,
         int rowIndex,
@@ -119,7 +176,6 @@ public class ExcelTemplateService
 
         if (merge)
         {
-            // 合并 2x2 区域作为插图目标区域
             int row2 = rowIndex + 1;
             int col2 = colIndex + 1;
             sheet.AddMergedRegion(new NPOI.SS.Util.CellRangeAddress(rowIndex, row2, colIndex, col2));
@@ -132,7 +188,7 @@ public class ExcelTemplateService
             Row1 = rowIndex,
             Col2 = colIndex + 1,
             Row2 = rowIndex + 1,
-            Dx1 = 100, // 精细控制图像偏移量（单位EMU）
+            Dx1 = 100,
             Dy1 = 50,
             AnchorType = AnchorType.MoveAndResize
         };
@@ -142,13 +198,13 @@ public class ExcelTemplateService
         switch (mode)
         {
             case ImageFillMode.Stretch:
-                picture.Resize(1.0); // 完全拉伸
+                picture.Resize(1.0);
                 break;
             case ImageFillMode.Fit:
-                picture.Resize(); // 保持比例适应单元格
+                picture.Resize();
                 break;
             case ImageFillMode.Fill:
-                picture.Resize(1.2); // 略微放大以填充
+                picture.Resize(1.2);
                 break;
         }
     }
