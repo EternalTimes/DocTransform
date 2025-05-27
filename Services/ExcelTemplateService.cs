@@ -11,13 +11,6 @@ using NPOI.XSSF.UserModel.Helpers;
 
 namespace DocTransform.Services;
 
-public enum ImageFillMode
-{
-    Fit,
-    Fill,
-    Stretch
-}
-
 public class ExcelTemplateService
 {
     private readonly ImageProcessingService _imageProcessingService;
