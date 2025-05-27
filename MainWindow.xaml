@@ -10,7 +10,7 @@
     xmlns:models="using:DocTransform.Models"
     mc:Ignorable="d"
     Title="Excel到Word数据映射工具">
-    <Grid x:Name="RootGrid" AllowDrop="True">
+    <Grid x:Name="RootGrid" AllowDrop="True" DragOver="RootGrid_DragOver" Drop="RootGrid_Drop">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

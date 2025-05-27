@@ -4,8 +4,11 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using WinRT.Interop;
+using System.Linq;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
+using Windows.Storage;
+using WinRT.Interop;
 
 namespace DocTransform
 {
@@ -147,6 +150,34 @@ namespace DocTransform
         {
             dialog.XamlRoot = this.Content.XamlRoot;
             await dialog.ShowAsync();
+        }
+
+        private void RootGrid_DragOver(object sender, DragEventArgs e)
+        {
+            // 当拖拽物包含文件时，向系统表明我们接受复制操作
+            // 这会使鼠标指针显示为“复制”图标
+            e.AcceptedOperation = DataPackageOperation.Copy;
+        }
+
+        private async void RootGrid_Drop(object sender, DragEventArgs e)
+        {
+            // 检查拖拽物中是否包含文件（StorageItems）
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                // 异步获取所有被拖入的文件
+                var items = await e.DataView.GetStorageItemsAsync();
+                if (items.Any())
+                {
+                    // 提取所有文件的完整路径
+                    var filePaths = items.OfType<StorageFile>().Select(i => i.Path).ToArray();
+
+                    // 如果 ViewModel 和 Command 存在，则执行命令
+                    if (ViewModel?.HandleDroppedFilesCommand != null)
+                    {
+                        ViewModel.HandleDroppedFilesCommand.Execute(filePaths);
+                    }
+                }
+            }
         }
 
         // Clean up when needed (if you add any future event handlers)
