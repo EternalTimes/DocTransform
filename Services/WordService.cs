@@ -4,6 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+
 
 namespace DocTransform.Services;
 
@@ -230,4 +233,45 @@ public class WordService
 
     private string GetCellText(XWPFTableCell cell) =>
         string.Join("", cell.Paragraphs.Select(p => p.ParagraphText));
+
+    public async Task<bool> IsValidTemplateAsync(string templatePath)
+    {
+        return await Task.Run(() =>
+            File.Exists(templatePath) && Path.GetExtension(templatePath).Equals(".docx", StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<List<string>> ExtractPlaceholdersNpoiAsync(string templatePath)
+    {
+        return await Task.Run(() =>
+        {
+            using var fs = new FileStream(templatePath, FileMode.Open, FileAccess.Read);
+            var doc = new XWPFDocument(fs);
+            var placeholders = new HashSet<string>();
+            foreach (var para in doc.Paragraphs)
+            {
+                var matches = Regex.Matches(para.ParagraphText, @"\{(.*?)\}");
+                foreach (Match match in matches)
+                    placeholders.Add(match.Groups[1].Value);
+            }
+            return placeholders.ToList();
+        });
+    }
+
+    public async Task<(bool Success, string Message)> ProcessTemplateAsync(
+        string templatePath, string outputPath, Dictionary<string, string> data, object additionalParams = null)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                GenerateWordFromTemplate(templatePath, outputPath, data);
+                return (true, "Word文档生成成功");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Word文档生成失败: {ex.Message}");
+            }
+        });
+    }
+
 }
