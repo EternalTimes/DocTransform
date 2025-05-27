@@ -18,7 +18,7 @@
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
             <converters:FilenameOnlyConverter x:Key="FilenameOnlyConverter" />
             <converters:BoolToIconConverter x:Key="BoolToIconConverter" />
-            <converters:GreaterThanConverter x:Key="GreaterThanConverter" />
+            <!-- <converters:GreaterThanConverter x:Key="GreaterThanConverter" /> -->
             <converters:BoolToStringConverter x:Key="BoolToStringConverter" />
             <converters:StringNotEmptyToBoolConverter x:Key="StringNotEmptyToBoolConverter" />
             <converters:NotZeroToVisibilityConverter x:Key="NotZeroToVisibilityConverter" />
