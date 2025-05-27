@@ -9,16 +9,16 @@ namespace DocTransform.Services;
 
 public class ImageProcessingService
 {
-    private static readonly string[] SupportedExtensions = new[]
-    {
+    private static readonly string[] SupportedExtensions =
+    [
         ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tif", ".tiff",
         ".svg", ".ico", ".heic", ".heif", ".psd", ".ai"
-    };
+    ];
 
     /// <summary>
     /// 获取目录下支持的图像文件路径列表
     /// </summary>
-    public async Task<List<string>> GetImageFilesAsync(string directory)
+    public static async Task<List<string>> GetImageFilesAsync(string directory)
     {
         return await Task.Run(() =>
         {
@@ -34,7 +34,7 @@ public class ImageProcessingService
     /// <summary>
     /// 获取图像的尺寸（宽，高）
     /// </summary>
-    public async Task<(int Width, int Height)?> GetImageSizeAsync(string path)
+    public static async Task<(int Width, int Height)?> GetImageSizeAsync(string path)
     {
         return await Task.Run<(int Width, int Height)?>(() =>
         {
@@ -53,7 +53,7 @@ public class ImageProcessingService
     /// <summary>
     /// 批量加载图像信息（路径，宽，高）
     /// </summary>
-    public async Task<List<(string Path, int Width, int Height)>> LoadImageInfoAsync(IEnumerable<string> paths)
+    public static async Task<List<(string Path, int Width, int Height)>> LoadImageInfoAsync(IEnumerable<string> paths)
     {
         var result = new List<(string Path, int Width, int Height)>();
 
@@ -70,7 +70,7 @@ public class ImageProcessingService
     /// <summary>
     /// 将图像转换为 PNG 格式并保存到目标路径
     /// </summary>
-    public async Task<bool> ConvertToPngAsync(string inputPath, string outputPath)
+    public static async Task<bool> ConvertToPngAsync(string inputPath, string outputPath)
     {
         return await Task.Run(() =>
         {
@@ -86,5 +86,10 @@ public class ImageProcessingService
                 return false;
             }
         });
+    }
+
+    public static async Task<List<string>> ScanDirectoryForImagesAsync(string directoryPath)
+    {
+        return await GetImageFilesAsync(directoryPath);
     }
 }

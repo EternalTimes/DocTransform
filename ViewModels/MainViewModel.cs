@@ -287,7 +287,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (!string.IsNullOrEmpty(newValue) && File.Exists(newValue))
         {
-            var isValid = await _excelTemplateService.IsValidTemplateAsync(newValue);
+            var isValid = await ExcelTemplateService.IsValidTemplateAsync(newValue);
             _dispatcherQueue.TryEnqueue(() => {
                 if (!isValid) { StatusMessage = "选择的Excel模板无效"; }
                 else { CheckExcelPlaceholdersCommand?.Execute(null); }
@@ -305,7 +305,7 @@ public partial class MainViewModel : ObservableObject
             if (string.IsNullOrEmpty(directoryName)) directoryName = new DirectoryInfo(directoryPath).Name;
 
             _dispatcherQueue.TryEnqueue(() => StatusMessage = "正在扫描图片目录...");
-            var imageFiles = await _imageProcessingService.ScanDirectoryForImagesAsync(directoryPath);
+            var imageFiles = await ImageProcessingService.ScanDirectoryForImagesAsync(directoryPath);
 
             _dispatcherQueue.TryEnqueue(() => {
                 if (imageFiles.Count == 0) { StatusMessage = $"目录 {directoryName} 中未找到支持的图片文件"; IsProcessing = false; return; }
@@ -593,8 +593,8 @@ public partial class MainViewModel : ObservableObject
                     {
                         var excelOutputPath = Path.Combine(OutputDirectory, $"{fileName}.xlsx");
                         var excelResult = UseImageReplacement && ImageDirectories.Any()
-                           ? await _excelTemplateService.ProcessTemplateWithImagesAsync(ExcelTemplatePath, excelOutputPath, rowData, ImageDirectories, ImageFillMode, ImageFillPercentage, null)
-                           : await _excelTemplateService.ProcessTemplateAsync(ExcelTemplatePath, excelOutputPath, rowData, null);
+                           ? await ExcelTemplateService.ProcessTemplateWithImagesAsync(ExcelTemplatePath, excelOutputPath, rowData, ImageDirectories, ImageFillMode, ImageFillPercentage, null)
+                           : await ExcelTemplateService.ProcessTemplateAsync(ExcelTemplatePath, excelOutputPath, rowData, null);
                         if (excelResult.Success) localSuccessCount++; else localFailCount++;
                     }
 
@@ -681,7 +681,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             _dispatcherQueue.TryEnqueue(() => { IsProcessing = true; StatusMessage = "正在检查Excel模板中的占位符..."; });
-            var placeholders = await _excelTemplateService.ExtractPlaceholdersAsync(ExcelTemplatePath);
+            var placeholders = await ExcelTemplateService.ExtractPlaceholdersAsync(ExcelTemplatePath);
             _dispatcherQueue.TryEnqueue(() => {
                 DetectedExcelPlaceholders.Clear();
                 foreach (var placeholder in placeholders) DetectedExcelPlaceholders.Add(placeholder);
@@ -702,7 +702,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             _dispatcherQueue.TryEnqueue(() => { IsProcessing = true; StatusMessage = $"正在扫描目录 {directory.DirectoryName} 中的图片..."; });
-            var imageFiles = await _imageProcessingService.ScanDirectoryForImagesAsync(directory.DirectoryPath);
+            var imageFiles = await ImageProcessingService.ScanDirectoryForImagesAsync(directory.DirectoryPath);
             _dispatcherQueue.TryEnqueue(() => {
                 if (directory.ImageFiles == null) directory.ImageFiles = new ObservableCollection<string>();
                 directory.ImageFiles.Clear();
