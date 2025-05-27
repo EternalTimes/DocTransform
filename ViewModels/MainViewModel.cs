@@ -1,7 +1,7 @@
 ﻿using DocTransform.Constants;
 using DocTransform.Models;
-using DocTransform.Services;
 using DocTransform.Mvvm; // 辅助类命名空间
+using DocTransform.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows.Input; // ICommand 接口
 using Windows.ApplicationModel.DataTransfer;
 using Windows.UI; // Color
+
 
 namespace DocTransform.ViewModels
 {
@@ -119,7 +120,7 @@ namespace DocTransform.ViewModels
 
             // 异步命令
             GenerateDocumentsCommand = new AsyncRelayCommand(GenerateDocuments);
-            HandleDroppedFilesCommand = new AsyncRelayCommand(async () => await HandleDroppedFilesAsync(null)); // 拖放的文件数组需要从View传递
+            HandleDroppedFilesCommand = new AsyncRelayCommand<string[]>(HandleDroppedFilesAsync); // 拖放的文件数组需要从View传递
             CheckPlaceholdersCommand = new AsyncRelayCommand(CheckPlaceholders);
             CheckExcelPlaceholdersCommand = new AsyncRelayCommand(CheckExcelPlaceholders);
             CheckDirectoryImagesCommand = new AsyncRelayCommand(async () => await CheckDirectoryImages(null)); // 目录对象需要从View传递
@@ -835,20 +836,19 @@ namespace DocTransform.ViewModels
             }
         }
 
-        public async Task HandleDroppedFilesAsync(string[]? files) // 命令方法 (参数从View传递)
+        public async Task HandleDroppedFilesAsync(string[]? files)
         {
             if (files == null || files.Length == 0) return;
             try
             {
                 var file = files[0]; // 只处理第一个文件作为示例
-                // 使用 Path.GetExtension 进行比较
                 if (Path.GetExtension(file).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
                 {
-                    ExcelFilePath = file; // 通过属性赋值以触发逻辑和通知
+                    ExcelFilePath = file; // 假设 ExcelFilePath 属性的 setter 会处理通知
                 }
                 else if (Path.GetExtension(file).Equals(".docx", StringComparison.OrdinalIgnoreCase))
                 {
-                    WordTemplatePath = file; // 通过属性赋值
+                    WordTemplatePath = file; // 假设 WordTemplatePath 属性的 setter 会处理通知
                 }
                 else
                 {
