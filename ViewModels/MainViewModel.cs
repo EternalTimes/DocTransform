@@ -259,9 +259,15 @@ namespace DocTransform.ViewModels
             get => _excelTemplatePath;
             set
             {
-                if (SetProperty(ref _excelTemplatePath, value))
+                if (SetProperty(ref _excelTemplatePath, value)) // 假设 SetProperty 来自 ObservableObject 基类
                 {
-                    OnExcelTemplatePathChanged(value); // 调用原 OnExcelTemplatePathChanged 逻辑
+                    // 调用可能已有的、当路径变化时执行的逻辑
+                    OnExcelTemplatePathChanged(value);
+
+                    // 手动通知所有新的依赖此属性的计算属性
+                    OnPropertyChanged(nameof(ExcelTemplatePathDisplayText));
+                    OnPropertyChanged(nameof(ExcelTemplatePathIsPlaceholder));
+                    OnPropertyChanged(nameof(ExcelTemplatePathForegroundBrush));
                 }
             }
         }
@@ -524,6 +530,15 @@ namespace DocTransform.ViewModels
         public string IdCardPlaceholdersText => string.Join(", ", _idCardPlaceholders);
 
         public bool IdCardExtractionRelatedPropertiesMightChange => true; // 这个可以保持为true，或者根据实际逻辑调整
+
+        // 为 Excel 模板路径提供显示文本和UI状态
+        public string ExcelTemplatePathDisplayText => string.IsNullOrEmpty(ExcelTemplatePath) ? "未选择Excel模板文件 (*.xlsx)" : Path.GetFileName(ExcelTemplatePath);
+        public bool ExcelTemplatePathIsPlaceholder => string.IsNullOrEmpty(ExcelTemplatePath);
+
+        // 为 Excel 模板路径文本提供前景色画刷 (根据是否为占位符)
+        public Brush ExcelTemplatePathForegroundBrush => ExcelTemplatePathIsPlaceholder
+            ? (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            : (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
 
 
         // --- 方法 (Methods) ---
