@@ -36,3 +36,4 @@ Thumbs.db
 
 # 忽略测试结果文件
 TestResults/
+*.pfx
