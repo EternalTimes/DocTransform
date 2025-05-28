@@ -5,50 +5,13 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>DocTransform</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;ARM64</Platforms>
+    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Content Remove="Assets\BadgeLogo.scale-100.png" />
-    <Content Remove="Assets\BadgeLogo.scale-125.png" />
-    <Content Remove="Assets\BadgeLogo.scale-150.png" />
-    <Content Remove="Assets\BadgeLogo.scale-200.png" />
-    <Content Remove="Assets\BadgeLogo.scale-400.png" />
-    <Content Remove="Assets\LargeTile.scale-100.png" />
-    <Content Remove="Assets\LargeTile.scale-125.png" />
-    <Content Remove="Assets\LargeTile.scale-150.png" />
-    <Content Remove="Assets\LargeTile.scale-200.png" />
-    <Content Remove="Assets\LargeTile.scale-400.png" />
-    <Content Remove="Assets\SmallTile.scale-100.png" />
-    <Content Remove="Assets\SmallTile.scale-125.png" />
-    <Content Remove="Assets\SmallTile.scale-150.png" />
-    <Content Remove="Assets\SmallTile.scale-200.png" />
-    <Content Remove="Assets\SmallTile.scale-400.png" />
-    <Content Remove="Assets\SplashScreen.scale-100.png" />
-    <Content Remove="Assets\SplashScreen.scale-125.png" />
-    <Content Remove="Assets\SplashScreen.scale-150.png" />
-    <Content Remove="Assets\SplashScreen.scale-200.png" />
-    <Content Remove="Assets\SplashScreen.scale-400.png" />
-    <Content Remove="Assets\Square150x150Logo.scale-100.png" />
-    <Content Remove="Assets\Square150x150Logo.scale-125.png" />
-    <Content Remove="Assets\Square150x150Logo.scale-150.png" />
-    <Content Remove="Assets\Square150x150Logo.scale-200.png" />
-    <Content Remove="Assets\Square150x150Logo.scale-400.png" />
-    <Content Remove="Assets\StoreLogo.scale-100.png" />
-    <Content Remove="Assets\StoreLogo.scale-125.png" />
-    <Content Remove="Assets\StoreLogo.scale-150.png" />
-    <Content Remove="Assets\StoreLogo.scale-200.png" />
-    <Content Remove="Assets\StoreLogo.scale-400.png" />
-    <Content Remove="Assets\Wide310x150Logo.scale-100.png" />
-    <Content Remove="Assets\Wide310x150Logo.scale-125.png" />
-    <Content Remove="Assets\Wide310x150Logo.scale-150.png" />
-    <Content Remove="Assets\Wide310x150Logo.scale-200.png" />
-    <Content Remove="Assets\Wide310x150Logo.scale-400.png" />
-  </ItemGroup>
   <ItemGroup>
     <Content Include="zrtx1-a67hz-001.ico" />
   </ItemGroup>
@@ -62,6 +25,12 @@
   -->
   <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
     <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Downloads\Gemini_Generated_icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -85,9 +54,20 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <SignAssembly>False</SignAssembly>
     <ApplicationIcon>zrtx1-a67hz-001.ico</ApplicationIcon>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <PackageCertificateThumbprint>6C08A6DB6B6EBAA04E5A45C4778DD14DC68899A7</PackageCertificateThumbprint>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+    <PackageIcon>Gemini_Generated_icon.png</PackageIcon>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA512</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <AppxBundle>Always</AppxBundle>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppxPackageCompression>normal</AppxPackageCompression>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
 </Project>
