@@ -25,6 +25,9 @@ namespace DocTransform
         {
             this.InitializeComponent();
 
+            /*
+            // Temporarily comment out or remove ViewModel creation and other initializations
+
             // Pass the window's DispatcherQueue to the ViewModel's constructor
             ViewModel = new MainViewModel(this.DispatcherQueue);
 
@@ -45,6 +48,7 @@ namespace DocTransform
             {
                 ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             }
+            */
         }
 
         private void InitializeWindow()
