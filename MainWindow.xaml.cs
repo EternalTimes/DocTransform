@@ -4,7 +4,9 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
@@ -38,6 +40,11 @@ namespace DocTransform
 
             // Add window state change handlers
             SetupWindowStateHandlers();
+
+            if (ViewModel != null)
+            {
+                ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+            }
         }
 
         private void InitializeWindow()
@@ -128,7 +135,34 @@ namespace DocTransform
             }
         }
 
+        private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            // 检查是否是 IsProcessing 属性发生了变化
+            if (e.PropertyName == nameof(ViewModel.IsProcessing))
+            {
+                // 当 IsProcessing 从 true 变为 false，并且有结果文本时，显示对话框
+                if (!ViewModel.IsProcessing && !string.IsNullOrEmpty(ViewModel.ProcessResultText))
+                {
+                    await ShowResultDialogAsync();
+                }
+            }
+        }
 
+        private async Task ShowResultDialogAsync()
+        {
+            var dialog = new ContentDialog
+            {
+                Title = ViewModel.ProcessSuccess ? "操作成功" : "操作失败",
+                Content = ViewModel.ProcessResultText,
+                PrimaryButtonText = "好的",
+                XamlRoot = this.Content.XamlRoot // 必须设置 XamlRoot
+            };
+
+            await dialog.ShowAsync();
+
+            // （可选）显示对话框后，可以清除结果文本，避免重复显示
+            // ViewModel.ProcessResultText = string.Empty; 
+        }
 
         public void CloseButton_Click(object sender, RoutedEventArgs e)
         {
