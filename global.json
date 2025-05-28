@@ -1,0 +1,6 @@
+{
+  "sdk": {
+    "version": "9.0.300", // 指向您已安装的SDK
+    "rollForward": "latestFeature" // 允许使用最新补丁
+  }
+}
