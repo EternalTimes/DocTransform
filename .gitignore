@@ -1,4 +1,4 @@
-﻿# 忽略Rider生成的文件
+# 忽略Rider生成的文件
 .run/
 riderModule.iml
 /_ReSharper.Caches/
@@ -36,4 +36,6 @@ Thumbs.db
 
 # 忽略测试结果文件
 TestResults/
+
+# 忽略证书文件
 *.pfx
