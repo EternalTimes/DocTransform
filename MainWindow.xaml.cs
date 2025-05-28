@@ -10,10 +10,12 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
+// using Windows.UI.WindowManagement;
 using WinRT.Interop;
 
 namespace DocTransform
 {
+
     public sealed partial class MainWindow : Window
     {
         public MainViewModel ViewModel { get; }
@@ -21,9 +23,30 @@ namespace DocTransform
         private bool _isMaximized = false;
         private OverlappedPresenter? _presenter;
 
+        private Microsoft.UI.Windowing.AppWindow appWindow;
+        private Microsoft.UI.Windowing.OverlappedPresenter presenter;
+
         public MainWindow()
         {
             this.InitializeComponent();
+
+            // è·å– AppWindow å¹¶é…ç½®æ ‡é¢˜æ 
+            appWindow = GetAppWindowForCurrentWindow();
+            var titleBar = appWindow.TitleBar;
+            titleBar.ExtendsContentIntoTitleBar = true; // è‡ªå®šä¹‰æ ‡é¢˜æ 
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            // è®¾ç½®è‡ªå®šä¹‰æ ‡é¢˜æ ä¸ºå¯æ‹–åŠ¨åŒºåŸŸ
+            this.SetTitleBar(CustomTitleBar);
+
+
+            // è®¾ç½®è‡ªå®šä¹‰æ ‡é¢˜æ ä¸ºå¯æ‹–åŠ¨åŒºåŸŸ
+            this.SetTitleBar(CustomTitleBar);
+
+            // è·å–çª—å£çŠ¶æ€ç®¡ç†å™¨
+            presenter = appWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+
 
             /*
             // Temporarily comment out or remove ViewModel creation and other initializations
@@ -64,24 +87,49 @@ namespace DocTransform
             _presenter = _appWindow.Presenter as OverlappedPresenter;
 
             // Set window properties
-            this.Title = "Excelµ½WordÊı¾İÓ³Éä¹¤¾ß";
-            // »ñÈ¡AppWindow²¢ÉèÖÃ³õÊ¼´óĞ¡
-            _appWindow = GetAppWindowForCurrentWindow();
+            this.Title = "Excelåˆ°Wordæ•°æ®æ˜ å°„å·¥å…·";
+            // è·å–AppWindowå¹¶è®¾ç½®åˆå§‹å¤§å°
+            
             if (_appWindow != null)
             {
-                _appWindow.Resize(new SizeInt32(950, 680)); // ÉèÖÃ³õÊ¼¿í¶ÈºÍ¸ß¶È
+                _appWindow.Resize(new SizeInt32(950, 680)); // è®¾ç½®åˆå§‹å®½åº¦å’Œé«˜åº¦
             }
 
             // Center the window
             CenterWindow();
         }
 
-        private AppWindow GetAppWindowForCurrentWindow()
+        private Microsoft.UI.Windowing.AppWindow GetAppWindowForCurrentWindow()
         {
-            IntPtr hWnd = WindowNative.GetWindowHandle(this);
-            WindowId wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            return AppWindow.GetFromWindowId(wndId);
+            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(wndId);
         }
+
+        // æœ€å°åŒ–æŒ‰é’®äº‹ä»¶
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            presenter?.Minimize();
+        }
+
+        // æœ€å¤§åŒ–/è¿˜åŸæŒ‰é’®äº‹ä»¶
+        private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (presenter != null)
+            {
+                if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
+                    presenter.Restore();
+                else
+                    presenter.Maximize();
+            }
+        }
+
+        // å…³é—­æŒ‰é’®äº‹ä»¶
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
 
         private void CenterWindow()
         {
@@ -107,44 +155,14 @@ namespace DocTransform
             // Alternative: Use a timer to periodically check state if needed
         }
 
-        public void MinimizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Use the presenter to minimize the window
-            if (_presenter != null)
-            {
-                _presenter.Minimize();
-            }
-        }
-
-        public void MaximizeButton_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleMaximize();
-        }
-
-        private void ToggleMaximize()
-        {
-            if (_presenter != null)
-            {
-                if (_presenter.State == OverlappedPresenterState.Maximized)
-                {
-                    _presenter.Restore();
-                    _isMaximized = false;
-                }
-                else
-                {
-                    _presenter.Maximize();
-                    _isMaximized = true;
-                }
-
-            }
-        }
+        
 
         private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            // ¼ì²éÊÇ·ñÊÇ IsProcessing ÊôĞÔ·¢ÉúÁË±ä»¯
+            // æ£€æŸ¥æ˜¯å¦æ˜¯ IsProcessing å±æ€§å‘ç”Ÿäº†å˜åŒ–
             if (e.PropertyName == nameof(ViewModel.IsProcessing))
             {
-                // µ± IsProcessing ´Ó true ±äÎª false£¬²¢ÇÒÓĞ½á¹ûÎÄ±¾Ê±£¬ÏÔÊ¾¶Ô»°¿ò
+                // å½“ IsProcessing ä» true å˜ä¸º falseï¼Œå¹¶ä¸”æœ‰ç»“æœæ–‡æœ¬æ—¶ï¼Œæ˜¾ç¤ºå¯¹è¯æ¡†
                 if (!ViewModel.IsProcessing && !string.IsNullOrEmpty(ViewModel.ProcessResultText))
                 {
                     await ShowResultDialogAsync();
@@ -156,21 +174,16 @@ namespace DocTransform
         {
             var dialog = new ContentDialog
             {
-                Title = ViewModel.ProcessSuccess ? "²Ù×÷³É¹¦" : "²Ù×÷Ê§°Ü",
+                Title = ViewModel.ProcessSuccess ? "æ“ä½œæˆåŠŸ" : "æ“ä½œå¤±è´¥",
                 Content = ViewModel.ProcessResultText,
-                PrimaryButtonText = "ºÃµÄ",
-                XamlRoot = this.Content.XamlRoot // ±ØĞëÉèÖÃ XamlRoot
+                PrimaryButtonText = "å¥½çš„",
+                XamlRoot = this.Content.XamlRoot // å¿…é¡»è®¾ç½® XamlRoot
             };
 
             await dialog.ShowAsync();
 
-            // £¨¿ÉÑ¡£©ÏÔÊ¾¶Ô»°¿òºó£¬¿ÉÒÔÇå³ı½á¹ûÎÄ±¾£¬±ÜÃâÖØ¸´ÏÔÊ¾
+            // ï¼ˆå¯é€‰ï¼‰æ˜¾ç¤ºå¯¹è¯æ¡†åï¼Œå¯ä»¥æ¸…é™¤ç»“æœæ–‡æœ¬ï¼Œé¿å…é‡å¤æ˜¾ç¤º
             // ViewModel.ProcessResultText = string.Empty; 
-        }
-
-        public void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
         }
 
         private void MainContentGrid_Loaded(object sender, RoutedEventArgs e)
@@ -192,24 +205,24 @@ namespace DocTransform
 
         private void RootGrid_DragOver(object sender, DragEventArgs e)
         {
-            // µ±ÍÏ×§Îï°üº¬ÎÄ¼şÊ±£¬ÏòÏµÍ³±íÃ÷ÎÒÃÇ½ÓÊÜ¸´ÖÆ²Ù×÷
-            // Õâ»áÊ¹Êó±êÖ¸ÕëÏÔÊ¾Îª¡°¸´ÖÆ¡±Í¼±ê
+            // å½“æ‹–æ‹½ç‰©åŒ…å«æ–‡ä»¶æ—¶ï¼Œå‘ç³»ç»Ÿè¡¨æ˜æˆ‘ä»¬æ¥å—å¤åˆ¶æ“ä½œ
+            // è¿™ä¼šä½¿é¼ æ ‡æŒ‡é’ˆæ˜¾ç¤ºä¸ºâ€œå¤åˆ¶â€å›¾æ ‡
             e.AcceptedOperation = DataPackageOperation.Copy;
         }
 
         private async void RootGrid_Drop(object sender, DragEventArgs e)
         {
-            // ¼ì²éÍÏ×§ÎïÖĞÊÇ·ñ°üº¬ÎÄ¼ş£¨StorageItems£©
+            // æ£€æŸ¥æ‹–æ‹½ç‰©ä¸­æ˜¯å¦åŒ…å«æ–‡ä»¶ï¼ˆStorageItemsï¼‰
             if (e.DataView.Contains(StandardDataFormats.StorageItems))
             {
-                // Òì²½»ñÈ¡ËùÓĞ±»ÍÏÈëµÄÎÄ¼ş
+                // å¼‚æ­¥è·å–æ‰€æœ‰è¢«æ‹–å…¥çš„æ–‡ä»¶
                 var items = await e.DataView.GetStorageItemsAsync();
                 if (items.Any())
                 {
-                    // ÌáÈ¡ËùÓĞÎÄ¼şµÄÍêÕûÂ·¾¶
+                    // æå–æ‰€æœ‰æ–‡ä»¶çš„å®Œæ•´è·¯å¾„
                     var filePaths = items.OfType<StorageFile>().Select(i => i.Path).ToArray();
 
-                    // Èç¹û ViewModel ºÍ Command ´æÔÚ£¬ÔòÖ´ĞĞÃüÁî
+                    // å¦‚æœ ViewModel å’Œ Command å­˜åœ¨ï¼Œåˆ™æ‰§è¡Œå‘½ä»¤
                     if (ViewModel?.HandleDroppedFilesCommand != null)
                     {
                         ViewModel.HandleDroppedFilesCommand.Execute(filePaths);

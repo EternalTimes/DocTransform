@@ -7,11 +7,68 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid x:Name="RootGrid">
-        <TextBlock Text="Minimal XAML Test - If this compiles, add your XAML back piece by piece." 
-                   HorizontalAlignment="Center" 
-                   VerticalAlignment="Center" 
-                   FontSize="20"/>
+    <Grid>
+        <!-- 自定义标题栏 -->
+        <Grid x:Name="CustomTitleBar"
+              Height="48"
+              VerticalAlignment="Top"
+              Background="{ThemeResource LayerOnMicaBaseAltFillColorDefaultBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
+            <!-- 应用图标（SVG/PNG均可，需提前加到项目中） -->
+            <Image Grid.Column="0" Source="Assets/StoreLogo.scale-100.png" Width="28" Height="28" Margin="12,0,8,0" VerticalAlignment="Center"/>
+
+            <!-- 标题文字 -->
+            <TextBlock Grid.Column="1"
+                       VerticalAlignment="Center"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                       Text="Excel到Word数据映射工具" />
+
+            <!-- 空间占位（可省略） -->
+
+            <!-- 最小化按钮 -->
+            <Button Grid.Column="2"
+                    Click="MinimizeButton_Click"
+                    Style="{StaticResource CaptionButtonsButtonStyle}"
+                    ToolTipService.ToolTip="最小化"
+                    Margin="8,0">
+                <FontIcon Glyph="&#xE921;" FontFamily="Segoe Fluent Icons"/>
+            </Button>
+            <!-- 最大化/还原按钮 -->
+            <Button Grid.Column="3"
+                    Click="MaximizeButton_Click"
+                    Style="{StaticResource CaptionButtonsButtonStyle}"
+                    ToolTipService.ToolTip="最大化/还原"
+                    Margin="8,0">
+                <FontIcon Glyph="&#xE922;" FontFamily="Segoe Fluent Icons"/>
+            </Button>
+            <!-- 关闭按钮 -->
+            <Button Grid.Column="4"
+                    Click="CloseButton_Click"
+                    Style="{StaticResource CaptionButtonsButtonStyle}"
+                    ToolTipService.ToolTip="关闭"
+                    Margin="8,0">
+                <FontIcon Glyph="&#xE8BB;" FontFamily="Segoe Fluent Icons"/>
+            </Button>
+        </Grid>
+    
+        <Grid x:Name="RootGrid" AllowDrop="True" DragOver="RootGrid_DragOver" Drop="RootGrid_Drop">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        
+                
+        </Grid>
     </Grid>
+
 </Window>
