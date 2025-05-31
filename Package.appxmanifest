@@ -10,7 +10,7 @@
   <Identity
     Name="d0196354-0b37-4c7f-8aba-51e53cd9bd41"
     Publisher="CN=Tirra"
-    Version="1.0.7.3" />
+    Version="1.0.8.3" />
 
   <mp:PhoneIdentity PhoneProductId="d0196354-0b37-4c7f-8aba-51e53cd9bd41" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
