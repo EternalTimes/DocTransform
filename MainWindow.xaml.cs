@@ -1,4 +1,3 @@
-using DocTransform.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -10,117 +9,130 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
 using Windows.Storage;
-// using Windows.UI.WindowManagement;
 using WinRT.Interop;
+using Microsoft.UI.Xaml.Input;
+using DocTransform.ViewModels;
 
 namespace DocTransform
 {
-
     public sealed partial class MainWindow : Window
     {
+        // 注释掉 ViewModel 相关代码，避免初始化错误
         public MainViewModel ViewModel { get; }
-        private AppWindow _appWindow;
-        private bool _isMaximized = false;
-        private OverlappedPresenter? _presenter;
 
         private Microsoft.UI.Windowing.AppWindow appWindow;
         private Microsoft.UI.Windowing.OverlappedPresenter presenter;
+
+        private Windows.Foundation.Point _lastPointerScreenPosition;
 
         public MainWindow()
         {
             this.InitializeComponent();
 
-            // 获取 AppWindow 并配置标题栏
-            appWindow = GetAppWindowForCurrentWindow();
-            var titleBar = appWindow.TitleBar;
-            titleBar.ExtendsContentIntoTitleBar = true; // 自定义标题栏
-            titleBar.ButtonBackgroundColor = Colors.Transparent;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-
-            // 设置自定义标题栏为可拖动区域
-            this.SetTitleBar(CustomTitleBar);
-
-
-            // 设置自定义标题栏为可拖动区域
-            this.SetTitleBar(CustomTitleBar);
-
-            // 获取窗口状态管理器
-            presenter = appWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
-
-
-            /*
-            // Temporarily comment out or remove ViewModel creation and other initializations
-
-            // Pass the window's DispatcherQueue to the ViewModel's constructor
-            ViewModel = new MainViewModel(this.DispatcherQueue);
-
-            // Initialize window properties
-            InitializeWindow();
-
-            // Set up custom title bar
-            ExtendsContentIntoTitleBar = true;
-            SetTitleBar(AppTitleBar);
-
-            // Add drag and drop handlers
-            SetupDragAndDrop();
-
-            // Add window state change handlers
-            SetupWindowStateHandlers();
-
-            if (ViewModel != null)
+            try
             {
-                ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+                // 获取 AppWindow 并配置标题栏
+                appWindow = GetAppWindowForCurrentWindow();
+
+                if (appWindow != null)
+                {
+                    var titleBar = appWindow.TitleBar;
+                    titleBar.ExtendsContentIntoTitleBar = true; // 自定义标题栏
+                    appWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Collapsed;
+
+                    /*
+                    // 1. 通用按钮背景色
+                    titleBar.ButtonBackgroundColor = Colors.Transparent;
+                    titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+                    titleBar.ButtonHoverBackgroundColor = Colors.Transparent;
+                    titleBar.ButtonPressedBackgroundColor = Colors.Transparent;
+
+                    // 2. 通用按钮前景色 (控制图标颜色) - 您第二个文件已包含大部分
+                    titleBar.ButtonForegroundColor = Colors.Transparent;
+                    titleBar.ButtonInactiveForegroundColor = Colors.Transparent;
+                    titleBar.ButtonHoverForegroundColor = Colors.Transparent;
+                    titleBar.ButtonPressedForegroundColor = Colors.Transparent;
+                    */
+
+                    // 设置自定义标题栏为可拖动区域
+                    SetCustomTitleBar();
+
+                    // 获取窗口状态管理器
+                    presenter = appWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter;
+                     
+                    // 设置窗口初始大小
+                    appWindow.Resize(new SizeInt32(950, 680));
+
+                    // 居中窗口
+                    CenterWindow();
+
+                    if (this.CustomTitleBar != null)
+                    {
+                        SetupTitleBarDragSupport();
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("错误: CustomTitleBar XAML 元素未找到，无法设置拖动。");
+                    }
+                }
             }
-            */
+            catch (Exception ex)
+            {
+                // 如果标题栏设置失败，至少确保窗口能正常显示
+                System.Diagnostics.Debug.WriteLine($"标题栏设置失败: {ex.Message}");
+            }
         }
 
-        private void InitializeWindow()
+        private void SetCustomTitleBar()
         {
-            /*
-            // Get AppWindow for advanced window management
-            IntPtr hWnd = WindowNative.GetWindowHandle(this);
-            WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            _appWindow = AppWindow.GetFromWindowId(windowId);
-            */
-
-            // Get the presenter for window state management
-            _presenter = _appWindow.Presenter as OverlappedPresenter;
-
-            // Set window properties
-            this.Title = "Excel到Word数据映射工具";
-            // 获取AppWindow并设置初始大小
-            
-            if (_appWindow != null)
-            {
-                _appWindow.Resize(new SizeInt32(950, 680)); // 设置初始宽度和高度
-            }
-
-            // Center the window
-            CenterWindow();
+            // 将 XAML 中定义的 CustomTitleBar 作为标题栏
+            this.SetTitleBar(CustomTitleBar);
         }
 
         private Microsoft.UI.Windowing.AppWindow GetAppWindowForCurrentWindow()
         {
-            IntPtr hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            var wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
-            return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(wndId);
+            try
+            {
+                IntPtr hWnd = WindowNative.GetWindowHandle(this);
+                var wndId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+                return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(wndId);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取AppWindow失败: {ex.Message}");
+                return null;
+            }
         }
 
         // 最小化按钮事件
         private void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
-            presenter?.Minimize();
+            try
+            {
+                presenter?.Minimize();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"最小化失败: {ex.Message}");
+            }
         }
 
         // 最大化/还原按钮事件
         private void MaximizeButton_Click(object sender, RoutedEventArgs e)
         {
-            if (presenter != null)
+            try
             {
-                if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
-                    presenter.Restore();
-                else
-                    presenter.Maximize();
+                if (presenter != null)
+                {
+                    if (presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
+                        presenter.Restore();
+                    else
+                        presenter.Maximize();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"最大化/还原失败: {ex.Message}");
             }
         }
 
@@ -130,111 +142,170 @@ namespace DocTransform
             this.Close();
         }
 
-
-        private void CenterWindow()
+        private void SetupTitleBarDragSupport()
         {
-            var displayArea = DisplayArea.GetFromWindowId(_appWindow.Id, DisplayAreaFallback.Nearest);
-            if (displayArea is not null)
+            try
             {
-                var centeredPosition = _appWindow.Position;
-                centeredPosition.X = (displayArea.WorkArea.Width - _appWindow.Size.Width) / 2;
-                centeredPosition.Y = (displayArea.WorkArea.Height - _appWindow.Size.Height) / 2;
-                _appWindow.Move(centeredPosition);
+                // 为标题栏添加拖动事件处理
+                CustomTitleBar.PointerPressed += CustomTitleBar_PointerPressed;
+                CustomTitleBar.PointerMoved += CustomTitleBar_PointerMoved;
+                CustomTitleBar.PointerReleased += CustomTitleBar_PointerReleased;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"设置标题栏拖动支持失败: {ex.Message}");
             }
         }
 
-        private void SetupDragAndDrop()
-        {
-            // Enable drag and drop on the MainContentGrid
-            // We'll set this up after the grid is loaded
-        }
+        private bool _isDragging = false;
+        // _lastPointerScreenPosition 字段已移至类级别声明 (见文件顶部附近)
 
-        private void SetupWindowStateHandlers()
+        private void CustomTitleBar_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            // We'll track window state manually through button clicks
-            // Alternative: Use a timer to periodically check state if needed
-        }
-
-        
-
-        private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            // 检查是否是 IsProcessing 属性发生了变化
-            if (e.PropertyName == nameof(ViewModel.IsProcessing))
+            var originalSource = e.OriginalSource as FrameworkElement;
+            if (originalSource is Button ||
+                (originalSource?.Parent is Button))
             {
-                // 当 IsProcessing 从 true 变为 false，并且有结果文本时，显示对话框
-                if (!ViewModel.IsProcessing && !string.IsNullOrEmpty(ViewModel.ProcessResultText))
+                _isDragging = false;
+                return;
+            }
+
+            try
+            {
+                var pointerPoint = e.GetCurrentPoint(null);
+                if (pointerPoint.Properties.IsLeftButtonPressed)
                 {
-                    await ShowResultDialogAsync();
+                    _isDragging = true;
+                    // 确保使用正确的字段名: _lastPointerScreenPosition (对应行号 179)
+                    _lastPointerScreenPosition = pointerPoint.Position;
+                    (sender as UIElement).CapturePointer(e.Pointer);
+
+                    CustomTitleBar.PointerMoved += CustomTitleBar_PointerMoved;
+                    CustomTitleBar.PointerReleased += CustomTitleBar_PointerReleased;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"标题栏按下事件失败: {ex.Message}");
+                if (_isDragging)
+                {
+                    _isDragging = false;
+                    (sender as UIElement)?.ReleasePointerCapture(e.Pointer);
+                    CustomTitleBar.PointerMoved -= CustomTitleBar_PointerMoved;
+                    CustomTitleBar.PointerReleased -= CustomTitleBar_PointerReleased;
                 }
             }
         }
 
-        private async Task ShowResultDialogAsync()
+        private void CustomTitleBar_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            try
             {
-                Title = ViewModel.ProcessSuccess ? "操作成功" : "操作失败",
-                Content = ViewModel.ProcessResultText,
-                PrimaryButtonText = "好的",
-                XamlRoot = this.Content.XamlRoot // 必须设置 XamlRoot
-            };
+                if (_isDragging && appWindow != null)
+                {
+                    var currentPointerScreenPosition = e.GetCurrentPoint(null).Position;
+                    // 确保使用正确的字段名: _lastPointerScreenPosition (对应行号 207, 208)
+                    var deltaX = currentPointerScreenPosition.X - _lastPointerScreenPosition.X;
+                    var deltaY = currentPointerScreenPosition.Y - _lastPointerScreenPosition.Y;
 
-            await dialog.ShowAsync();
+                    var currentAppWindowPosition = appWindow.Position;
+                    appWindow.Move(new Windows.Graphics.PointInt32(
+                        currentAppWindowPosition.X + (int)deltaX,
+                        currentAppWindowPosition.Y + (int)deltaY));
 
-            // （可选）显示对话框后，可以清除结果文本，避免重复显示
-            // ViewModel.ProcessResultText = string.Empty; 
-        }
-
-        private void MainContentGrid_Loaded(object sender, RoutedEventArgs e)
-        {
-            // Set up drag and drop after the grid is loaded
-            if (sender is Grid grid)
+                    // 确保使用正确的字段名: _lastPointerScreenPosition (对应行号 216)
+                    _lastPointerScreenPosition = currentPointerScreenPosition;
+                }
+            }
+            catch (Exception ex)
             {
-                grid.AllowDrop = true;
-                // Drag & drop events will be added later when ViewModel is ready
+                System.Diagnostics.Debug.WriteLine($"标题栏移动事件失败: {ex.Message}");
             }
         }
 
-        // Method to show ContentDialog (replaces MaterialDesign DialogHost)
-        public async void ShowDialog(ContentDialog dialog)
+        private void CustomTitleBar_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            dialog.XamlRoot = this.Content.XamlRoot;
-            await dialog.ShowAsync();
+            try
+            {
+                if (_isDragging)
+                {
+                    _isDragging = false;
+                    (sender as UIElement).ReleasePointerCapture(e.Pointer);
+
+                    CustomTitleBar.PointerMoved -= CustomTitleBar_PointerMoved;
+                    CustomTitleBar.PointerReleased -= CustomTitleBar_PointerReleased;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"标题栏释放事件失败: {ex.Message}");
+            }
+        }
+
+        private void CenterWindow()
+        {
+            try
+            {
+                if (appWindow != null)
+                {
+                    var displayArea = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Nearest);
+                    if (displayArea != null)
+                    {
+                        var centeredPosition = appWindow.Position;
+                        centeredPosition.X = (displayArea.WorkArea.Width - appWindow.Size.Width) / 2;
+                        centeredPosition.Y = (displayArea.WorkArea.Height - appWindow.Size.Height) / 2;
+                        appWindow.Move(centeredPosition);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"居中窗口失败: {ex.Message}");
+            }
         }
 
         private void RootGrid_DragOver(object sender, DragEventArgs e)
         {
-            // 当拖拽物包含文件时，向系统表明我们接受复制操作
-            // 这会使鼠标指针显示为“复制”图标
-            e.AcceptedOperation = DataPackageOperation.Copy;
+            try
+            {
+                // 当拖拽物包含文件时，向系统表明我们接受复制操作
+                e.AcceptedOperation = DataPackageOperation.Copy;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"拖拽悬停处理失败: {ex.Message}");
+            }
         }
 
         private async void RootGrid_Drop(object sender, DragEventArgs e)
         {
-            // 检查拖拽物中是否包含文件（StorageItems）
-            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            try
             {
-                // 异步获取所有被拖入的文件
-                var items = await e.DataView.GetStorageItemsAsync();
-                if (items.Any())
+                // 检查拖拽物中是否包含文件（StorageItems）
+                if (e.DataView.Contains(StandardDataFormats.StorageItems))
                 {
-                    // 提取所有文件的完整路径
-                    var filePaths = items.OfType<StorageFile>().Select(i => i.Path).ToArray();
-
-                    // 如果 ViewModel 和 Command 存在，则执行命令
-                    if (ViewModel?.HandleDroppedFilesCommand != null)
+                    // 异步获取所有被拖入的文件
+                    var items = await e.DataView.GetStorageItemsAsync();
+                    if (items.Any())
                     {
-                        ViewModel.HandleDroppedFilesCommand.Execute(filePaths);
+                        // 提取所有文件的完整路径
+                        var filePaths = items.OfType<StorageFile>().Select(i => i.Path).ToArray();
+
+                        // 暂时只输出文件路径，等 ViewModel 准备好后再处理
+                        System.Diagnostics.Debug.WriteLine($"拖入文件: {string.Join(", ", filePaths)}");
+
+                        // 如果 ViewModel 和 Command 存在，则执行命令
+                        // if (ViewModel?.HandleDroppedFilesCommand != null)
+                        // {
+                        //     ViewModel.HandleDroppedFilesCommand.Execute(filePaths);
+                        // }
                     }
                 }
             }
-        }
-
-        // Clean up when needed (if you add any future event handlers)
-        public void Cleanup()
-        {
-            // Reserved for future cleanup if needed
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"文件拖拽处理失败: {ex.Message}");
+            }
         }
     }
 }
