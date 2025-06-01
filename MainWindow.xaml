@@ -38,7 +38,23 @@
                        FontWeight="SemiBold"
                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
 
-            
+            <!-- 标题栏上的设置按钮 -->
+            <Button x:Uid="SettingsButtonOnAppTitle" Grid.Column="2"
+                    Click="SettingsButtonOnAppTitle_Click" 
+                    Margin="4,0"
+                    Height="32"
+                    Background="Transparent"
+                    BorderBrush="Transparent">
+                <StackPanel Orientation="Horizontal" 
+                            Spacing="8">
+                    <FontIcon Glyph="&#xE713;" 
+                              FontFamily="Segoe Fluent Icons" 
+                              FontSize="12" 
+                              VerticalAlignment="Center"/>
+                    <TextBlock x:Uid="SettingsButtonOnAppTitle_Label" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
             <!-- 最小化按钮 -->
             <!--<Button Grid.Column="2"
                     Click="MinimizeButton_Click"
@@ -80,7 +96,7 @@
             </Button>-->
         </Grid>
 
-        <!-- 主内容区域 -->
+        <!-- 主内容区域 --><!--
         <Grid x:Name="RootGrid" 
               Margin="0,48,0,0"
               AllowDrop="True" 
@@ -91,7 +107,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- 临时内容 - 显示应用已启动 -->
+            --><!-- 临时内容 - 显示应用已启动 --><!--
             <StackPanel Grid.Row="0" 
                        Margin="20" 
                        HorizontalAlignment="Center" 
@@ -107,7 +123,7 @@
                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
 
-            <!-- 占位区域用于拖拽 -->
+            --><!-- 占位区域用于拖拽 --><!--
             <Border Grid.Row="1" 
                     Margin="20" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
@@ -120,6 +136,9 @@
                           FontSize="18"
                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
             </Border>
-        </Grid>
+        </Grid>-->
+
+        <Frame x:Name="ContentFrame" Margin="0,48,0,0" />
+
     </Grid>
 </Window>

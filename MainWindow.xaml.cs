@@ -1,9 +1,11 @@
 using DocTransform.ViewModels;
+using DocTransform.Pages;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -89,6 +91,11 @@ namespace DocTransform
 
                     if (this.CustomTitleBar != null)
                     {
+                        // 在CustomTitleBar加载和窗口大小改变时调整其Padding
+                        this.CustomTitleBar.Loaded += CustomTitleBar_LoadedOrSizeChanged;
+                        appWindow.Changed += AppWindow_Changed;
+
+                        // SetTitleBar仍然重要，它定义了可拖动区域
                         this.SetTitleBar(this.CustomTitleBar);
                         Debug.WriteLine("CustomTitleBar 已成功设置为标题栏内容区域。");
                     }
@@ -103,6 +110,92 @@ namespace DocTransform
             {
                 // 如果标题栏设置失败，至少确保窗口能正常显示
                 System.Diagnostics.Debug.WriteLine($"标题栏设置失败: {ex.Message}");
+            }
+
+
+            if (this.ContentFrame != null)
+            {
+                // 确保 HomePage 类存在于正确的命名空间下
+                // 如果 HomePage 在 DocTransform.Views 命名空间下，则用 typeof(DocTransform.Views.HomePage)
+                this.ContentFrame.Navigate(typeof(DocTransform.Pages.HomePage)); // 假设 HomePage 在 DocTransform 命名空间
+                System.Diagnostics.Debug.WriteLine("初始导航到 HomePage。");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("错误: MainWindow.xaml 中未找到名为 ContentFrame 的 Frame 控件，无法进行初始导航。");
+            }
+
+        }
+
+        private void CustomTitleBar_LoadedOrSizeChanged(object sender, RoutedEventArgs e)
+        {
+            AdjustCustomTitleBarPadding();
+        }
+
+        private void AppWindow_Changed(object sender, AppWindowChangedEventArgs args)
+        {
+            // 仅当窗口大小改变时才调整，避免不必要的重复计算
+            if (args.DidSizeChange)
+            {
+                AdjustCustomTitleBarPadding();
+            }
+        }
+
+        private void AdjustCustomTitleBarPadding()
+        {
+            if (appWindow != null && this.CustomTitleBar != null && CustomTitleBar.XamlRoot != null)
+            {
+                // RightInset 是以物理像素为单位的。我们需要将其转换回有效的像素（XAML单位）。
+                double rightPadding = appWindow.TitleBar.RightInset / CustomTitleBar.XamlRoot.RasterizationScale;
+
+                if (rightPadding < 0) rightPadding = 0; // 确保 padding 不是负数
+
+                this.CustomTitleBar.Padding = new Thickness(0, 0, rightPadding, 0);
+                Debug.WriteLine($"CustomTitleBar Padding updated. Right: {rightPadding}");
+            }
+        }
+
+        private void SettingsButtonOnAppTitle_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("SettingsButtonOnAppTitle_Click Fired.");
+
+            if (this.ContentFrame == null)
+            {
+                Debug.WriteLine("错误: this.ContentFrame is NULL. Navigation cannot proceed.");
+                return;
+            }
+
+            if (this.ContentFrame.XamlRoot == null)
+            {
+                Debug.WriteLine("错误: this.ContentFrame.XamlRoot is NULL. The Frame might not be in the live visual tree. Navigation cannot proceed.");
+                return;
+            }
+
+            Debug.WriteLine($"ContentFrame found: {this.ContentFrame.Name}, XamlRoot is not null.");
+
+            try
+            {
+                // 【恢复】实际导航到 SettingsPage 的代码
+                Type settingsPageType = typeof(DocTransform.Pages.SettingsPage);
+                if (settingsPageType == null)
+                {
+                    Debug.WriteLine("错误: typeof(DocTransform.SettingsPage) resolved to null. Check class name and namespace.");
+                    return;
+                }
+                Debug.WriteLine($"Attempting to navigate to {settingsPageType.FullName}");
+                this.ContentFrame.Navigate(settingsPageType);
+                Debug.WriteLine("成功导航到设置页面。");
+            }
+            catch (NullReferenceException nre)
+            {
+                Debug.WriteLine($"导航时捕获到 NullReferenceException: {nre.Message}");
+                Debug.WriteLine($"Stack Trace: {nre.StackTrace}");
+                // You can add more specific error handling or logging here
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"导航时捕获到其他异常: {ex.Message}");
+                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
             }
         }
 
@@ -144,50 +237,5 @@ namespace DocTransform
             }
         }
 
-        private void RootGrid_DragOver(object sender, DragEventArgs e)
-        {
-            try
-            {
-                // 当拖拽物包含文件时，向系统表明我们接受复制操作
-                e.AcceptedOperation = DataPackageOperation.Copy;
-            }
-
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"拖拽悬停处理失败: {ex.Message}");
-            }
-        }
-
-        private async void RootGrid_Drop(object sender, DragEventArgs e)
-        {
-            try
-            {
-                // 检查拖拽物中是否包含文件（StorageItems）
-                if (e.DataView.Contains(StandardDataFormats.StorageItems))
-                {
-                    // 异步获取所有被拖入的文件
-                    var items = await e.DataView.GetStorageItemsAsync();
-                    if (items.Any())
-                    {
-                        // 提取所有文件的完整路径
-                        var filePaths = items.OfType<StorageFile>().Select(i => i.Path).ToArray();
-
-                        // 暂时只输出文件路径，等 ViewModel 准备好后再处理
-                        System.Diagnostics.Debug.WriteLine($"拖入文件: {string.Join(", ", filePaths)}");
-
-                        // 如果 ViewModel 和 Command 存在，则执行命令
-                        // if (ViewModel?.HandleDroppedFilesCommand != null)
-                        // {
-                        //     ViewModel.HandleDroppedFilesCommand.Execute(filePaths);
-                        // }
-                    }
-                }
-            }
-
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"文件拖拽处理失败: {ex.Message}");
-            }
-        }
     }
 }
