@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.Resources;
 using Windows.Graphics;
 using Windows.Storage;
 using WinRT.Interop;
@@ -22,7 +23,46 @@ namespace DocTransform
         public MainViewModel ViewModel { get; }
 
         private Microsoft.UI.Windowing.AppWindow appWindow;
-        
+
+        private static ResourceLoader _resourceLoader = null;
+
+        private static ResourceLoader GetResourceLoaderInstance()
+        {
+            if (_resourceLoader == null)
+            {
+                try
+                {
+                    // 尝试获取与当前视图无关的 ResourceLoader，适用于后台任务或库代码
+                    // 对于UI代码，ResourceLoader.GetForCurrentView() 也可以，但GetForViewIndependentUse更通用
+                    _resourceLoader = ResourceLoader.GetForViewIndependentUse();
+                }
+                catch
+                {
+                    // 如果上述方法失败（例如在某些非标准上下文中），尝试默认构造函数
+                    _resourceLoader = new ResourceLoader();
+                }
+            }
+            return _resourceLoader;
+        }
+
+        /// <summary>
+        /// 从资源文件获取本地化字符串。
+        /// </summary>
+        /// <param name="resourceKey">资源文件中的键名 (Name)。</param>
+        /// <returns>本地化后的字符串，如果找不到则返回标记过的键名。</returns>
+        public static string GetLocalizedString(string resourceKey)
+        {
+            try
+            {
+                return GetResourceLoaderInstance().GetString(resourceKey);
+            }
+            catch (Exception ex) // 更具体地捕获可能的异常，例如资源未找到
+            {
+                System.Diagnostics.Debug.WriteLine($"资源字符串 '{resourceKey}' 未找到。错误: {ex.Message}");
+                return $"!{resourceKey}!"; // 返回一个清晰的标记，表示资源缺失
+            }
+        }
+
         public MainWindow()
         {
             this.InitializeComponent();

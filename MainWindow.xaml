@@ -31,12 +31,12 @@
                    VerticalAlignment="Center"/>
 
             <!-- 标题文字 -->
-            <TextBlock Grid.Column="1"
+            <TextBlock x:Uid="AppTitleTextBlock" 
+                       Grid.Column="1"
                        VerticalAlignment="Center"
                        FontSize="16"
                        FontWeight="SemiBold"
-                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                       Text="Excel到Word数据映射工具" />
+                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
 
             
             <!-- 最小化按钮 -->
