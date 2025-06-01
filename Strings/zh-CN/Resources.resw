@@ -120,4 +120,7 @@
   <data name="AppTitleTextBlock.Text" xml:space="preserve">
     <value>Excel到Word数据映射工具</value>
   </data>
+  <data name="SettingsButtonOnAppTitle_Label.Text" xml:space="preserve">
+    <value>设置</value>
+  </data>
 </root>
