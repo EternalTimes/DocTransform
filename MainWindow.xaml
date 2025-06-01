@@ -38,8 +38,9 @@
                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                        Text="Excel到Word数据映射工具" />
 
+            
             <!-- 最小化按钮 -->
-            <Button Grid.Column="2"
+            <!--<Button Grid.Column="2"
                     Click="MinimizeButton_Click"
                     ToolTipService.ToolTip="最小化"
                     Margin="4,0"
@@ -48,10 +49,10 @@
                     Background="Transparent"
                     BorderBrush="Transparent">
                 <FontIcon Glyph="&#xE921;" FontFamily="Segoe Fluent Icons" FontSize="12"/>
-            </Button>
+            </Button>-->
 
             <!-- 最大化/还原按钮 -->
-            <Button Grid.Column="3"
+            <!--<Button Grid.Column="3"
                     Click="MaximizeButton_Click"
                     ToolTipService.ToolTip="最大化/还原"
                     Margin="4,0"
@@ -60,10 +61,10 @@
                     Background="Transparent"
                     BorderBrush="Transparent">
                 <FontIcon Glyph="&#xE922;" FontFamily="Segoe Fluent Icons" FontSize="12"/>
-            </Button>
+            </Button>-->
 
             <!-- 关闭按钮 -->
-            <Button Grid.Column="4"
+            <!--<Button Grid.Column="4"
                     Click="CloseButton_Click"
                     ToolTipService.ToolTip="关闭"
                     Margin="4,0"
@@ -76,7 +77,7 @@
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
                 </Button.Resources>
                 <FontIcon Glyph="&#xE8BB;" FontFamily="Segoe Fluent Icons" FontSize="12"/>
-            </Button>
+            </Button>-->
         </Grid>
 
         <!-- 主内容区域 -->
